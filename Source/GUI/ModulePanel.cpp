@@ -1,4 +1,5 @@
 #include "ModulePanel.h"
+#include "UIAssets.h"
 
 namespace aura
 {
@@ -120,9 +121,24 @@ namespace aura
     {
         auto bounds = getLocalBounds().toFloat();
 
-        juce::ColourGradient panelGradient (creamTop, 0.0f, 0.0f, creamBottom, 0.0f, bounds.getHeight(), false);
-        g.setGradientFill (panelGradient);
-        g.fillRoundedRectangle (bounds, 6.0f);
+        const auto& creamTexture = UIAssets::getCreamPanel();
+        if (creamTexture.isValid())
+        {
+            // Tile origin uses this panel's position within the editor (not
+            // local 0,0), so the texture lines up with the big cream
+            // backplate drawn behind every module instead of restarting at
+            // each panel's own corner.
+            g.setFillType (juce::FillType (creamTexture, juce::AffineTransform::translation (
+                (float) -getX(), (float) -getY())));
+            g.fillRoundedRectangle (bounds, 6.0f);
+            g.setFillType (juce::FillType (juce::Colours::black));
+        }
+        else
+        {
+            juce::ColourGradient panelGradient (creamTop, 0.0f, 0.0f, creamBottom, 0.0f, bounds.getHeight(), false);
+            g.setGradientFill (panelGradient);
+            g.fillRoundedRectangle (bounds, 6.0f);
+        }
 
         g.setColour (tanBorder.withAlpha (0.6f));
         g.drawRoundedRectangle (bounds.reduced (1.0f), 6.0f, 1.5f);

@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "Core/ParameterIDs.h"
 #include "Core/Instrument.h"
+#include "GUI/UIAssets.h"
 
 namespace aura
 {
@@ -192,56 +193,37 @@ namespace aura
         drawCorner (18.0f, (float) getHeight() - 18.0f, juce::MathConstants<float>::pi + juce::MathConstants<float>::halfPi);
         drawCorner ((float) getWidth() - 18.0f, (float) getHeight() - 18.0f, 0.0f);
 
-        // Leather carrying handle, arched over the top edge.
+        // Real photographed leather carrying handle, arched over the top edge.
         {
-            const float handleWidth = 180.0f;
-            const float cx = getWidth() * 0.5f;
-            juce::Path handle;
-            handle.startNewSubPath (cx - handleWidth * 0.5f, 30.0f);
-            handle.quadraticTo (cx, 2.0f, cx + handleWidth * 0.5f, 30.0f);
-            g.setColour (juce::Colour (0xff2e2119));
-            g.strokePath (handle, juce::PathStrokeType (11.0f, juce::PathStrokeType::curved,
-                                                          juce::PathStrokeType::rounded));
-            g.setColour (juce::Colour (0xff4a3627));
-            g.strokePath (handle, juce::PathStrokeType (6.0f, juce::PathStrokeType::curved,
-                                                          juce::PathStrokeType::rounded));
-
-            for (float side : { -1.0f, 1.0f })
+            const auto& handleImage = UIAssets::getHandle();
+            if (handleImage.isValid())
             {
-                juce::Rectangle<float> mount (18.0f, 12.0f);
-                mount.setCentre ({ cx + side * handleWidth * 0.5f, 30.0f });
-                juce::ColourGradient mountGrad (chromeLight, mount.getX(), mount.getY(),
-                                                 chromeDark, mount.getRight(), mount.getBottom(), false);
-                g.setGradientFill (mountGrad);
-                g.fillRoundedRectangle (mount, 2.0f);
+                const float handleWidth = 200.0f;
+                const float aspect = (float) handleImage.getHeight() / (float) handleImage.getWidth();
+                const float handleHeight = handleWidth * aspect;
+                juce::Rectangle<float> target (0.0f, 0.0f, handleWidth, handleHeight);
+                target.setCentre ({ getWidth() * 0.5f, 18.0f });
+                g.drawImage (handleImage, target, juce::RectanglePlacement::centred);
             }
         }
 
-        // Sparkle grille cloth, baked into the cached background since it's
-        // static (only the VU needle above it animates).
+        // Real photographed sparkle grille cloth, tiled to fill the grille
+        // strip - baked into the cached background since it's static (only
+        // the VU needle above it animates).
         {
             auto grille = getGrilleBounds().toFloat();
-            g.setColour (juce::Colour (0xff2b261f));
-            g.fillRoundedRectangle (grille, 6.0f);
-
-            juce::Graphics::ScopedSaveState save (g);
-            g.reduceClipRegion (getGrilleBounds());
-
-            constexpr float spacing = 6.0f;
-            g.setColour (juce::Colour (0xff8c7b64).withAlpha (0.5f));
-            for (float yy = grille.getY(); yy < grille.getBottom(); yy += spacing)
-                g.drawHorizontalLine ((int) yy, grille.getX(), grille.getRight());
-            g.setColour (juce::Colour (0xff4a4033).withAlpha (0.5f));
-            for (float xx = grille.getX(); xx < grille.getRight(); xx += spacing)
-                g.drawVerticalLine ((int) xx, grille.getY(), grille.getBottom());
-
-            juce::Random sparkleRng (999);
-            g.setColour (juce::Colour (0xffd4af37).withAlpha (0.5f));
-            for (int i = 0; i < 220; ++i)
+            const auto& grilleImage = UIAssets::getGrille();
+            if (grilleImage.isValid())
             {
-                const auto px = grille.getX() + sparkleRng.nextFloat() * grille.getWidth();
-                const auto py = grille.getY() + sparkleRng.nextFloat() * grille.getHeight();
-                g.fillRect (juce::Rectangle<float> (1.2f, 1.2f).withCentre ({ px, py }));
+                g.setFillType (juce::FillType (grilleImage, juce::AffineTransform::translation (
+                    grille.getX(), grille.getY())));
+                g.fillRoundedRectangle (grille, 6.0f);
+                g.setFillType (juce::FillType (juce::Colours::black));
+            }
+            else
+            {
+                g.setColour (juce::Colour (0xff2b261f));
+                g.fillRoundedRectangle (grille, 6.0f);
             }
 
             g.setColour (juce::Colour (0xff0d0d0d));
@@ -257,11 +239,24 @@ namespace aura
 
         // Cream backplate behind every module panel - the modules' own
         // gaps show this through, so the panel reads as one continuous
-        // ivory control plate rather than separate floating tiles.
-        juce::ColourGradient panelGradient (creamTop, 0.0f, (float) panel.getY(),
-                                             creamBottom, 0.0f, (float) panel.getBottom(), false);
-        g.setGradientFill (panelGradient);
-        g.fillRoundedRectangle (panel.toFloat(), 10.0f);
+        // ivory control plate rather than separate floating tiles. Tile
+        // origin is the editor's own (0,0) - ModulePanel uses the matching
+        // -getX()/-getY() offset so its own cream fill lines up exactly
+        // with this one instead of restarting at each panel's corner.
+        const auto& creamTexture = UIAssets::getCreamPanel();
+        if (creamTexture.isValid())
+        {
+            g.setFillType (juce::FillType (creamTexture, juce::AffineTransform()));
+            g.fillRoundedRectangle (panel.toFloat(), 10.0f);
+            g.setFillType (juce::FillType (juce::Colours::black));
+        }
+        else
+        {
+            juce::ColourGradient panelGradient (creamTop, 0.0f, (float) panel.getY(),
+                                                 creamBottom, 0.0f, (float) panel.getBottom(), false);
+            g.setGradientFill (panelGradient);
+            g.fillRoundedRectangle (panel.toFloat(), 10.0f);
+        }
         g.setColour (tanBorder);
         g.drawRoundedRectangle (panel.toFloat().reduced (1.0f), 10.0f, 1.5f);
 
@@ -274,23 +269,18 @@ namespace aura
         g.drawText ("AURA", panel.getX() + 22, panel.getY() + 34, 220, 44, juce::Justification::centredLeft);
 
         {
-            juce::Rectangle<float> jewel (26.0f, 26.0f);
+            juce::Rectangle<float> jewel (30.0f, 30.0f);
             jewel.setCentre ({ (float) panel.getX() + 250.0f, (float) panel.getY() + (float) headerHeight * 0.5f });
 
-            juce::ColourGradient bezelGrad (chromeLight, jewel.getX(), jewel.getY(),
-                                             chromeDark, jewel.getRight(), jewel.getBottom(), false);
-            g.setGradientFill (bezelGrad);
-            g.fillEllipse (jewel.expanded (3.0f));
-
-            juce::ColourGradient jewelGrad (juce::Colour (0xffff9999), jewel.getX() + jewel.getWidth() * 0.35f,
-                                             jewel.getY() + jewel.getHeight() * 0.3f,
-                                             juce::Colour (0xff4a0000), jewel.getCentreX(), jewel.getBottom(), false);
-            g.setGradientFill (jewelGrad);
-            g.fillEllipse (jewel);
-            g.setColour (juce::Colours::white.withAlpha (0.55f));
-            g.fillEllipse (jewel.reduced (jewel.getWidth() * 0.3f)
-                               .translated (-jewel.getWidth() * 0.15f, -jewel.getHeight() * 0.18f)
-                               .withSizeKeepingCentre (jewel.getWidth() * 0.28f, jewel.getHeight() * 0.2f));
+            const auto& jewelImage = UIAssets::getJewelRed();
+            if (jewelImage.isValid())
+            {
+                const auto scale = jewel.getWidth() / (float) jewelImage.getWidth();
+                g.setFillType (juce::FillType (jewelImage, juce::AffineTransform::scale (scale)
+                                                                .translated (jewel.getX(), jewel.getY())));
+                g.fillEllipse (jewel);
+                g.setFillType (juce::FillType (juce::Colours::black));
+            }
         }
 
         g.setColour (inkBrown.withAlpha (0.85f));

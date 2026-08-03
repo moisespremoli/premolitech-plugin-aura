@@ -42,14 +42,36 @@ target_sources(AURA PRIVATE
     Source/DSP/Cab/CabModule.cpp
     Source/GUI/AuraLookAndFeel.cpp
     Source/GUI/ModulePanel.cpp
-    Source/GUI/VUMeterComponent.cpp)
+    Source/GUI/VUMeterComponent.cpp
+    Source/GUI/UIAssets.cpp)
 
 target_include_directories(AURA PRIVATE Source)
 
-# IR de cabinet placeholder, embutida como recurso binário até uma
-# biblioteca de IRs real e licenciada ser integrada (Fase 3).
+# IR de cabinet placeholder + arte real do painel vintage (processada a
+# partir de imagens geradas por IA - ver Resources/UI), embutidas como
+# recursos binários.
+#
+# Os 61 frames do knob (rotação pré-calculada) são ficheiros separados,
+# não um atlas/strip: foram gerados assim ao investigar um bug de
+# renderização em que Graphics::drawImage() "lava" (wash-out) a imagem
+# para uma cor translúcida sempre que corre dentro do paint() de um
+# componente filho (confirmado isolando o mesmo desenho a funcionar
+# perfeitamente no paint() do editor de topo, e a falhar em qualquer
+# componente filho). A causa raiz real acabou por ser outra - resolvida
+# em código desenhando com setFillType()+fillRect()/fillEllipse() em vez
+# de drawImage() (ver AuraLookAndFeel.cpp) - por isso um atlas único
+# voltaria a ser seguro hoje, mas os ficheiros separados já estão
+# validados e não há necessidade de arriscar a mudança.
+file(GLOB AURA_KNOB_FRAMES CONFIGURE_DEPENDS Resources/UI/knob_frames/*.png)
+
 juce_add_binary_data(AURAAssets SOURCES
-    Resources/IR/placeholder_cab.wav)
+    Resources/IR/placeholder_cab.wav
+    ${AURA_KNOB_FRAMES}
+    Resources/UI/jewel_red.png
+    Resources/UI/jewel_green.png
+    Resources/UI/handle.png
+    Resources/UI/grille.png
+    Resources/UI/cream_panel.png)
 
 target_compile_definitions(AURA PUBLIC
     JUCE_WEB_BROWSER=0
