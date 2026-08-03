@@ -34,6 +34,9 @@ namespace aura
         juce::ComboBox instrumentBox;
         std::unique_ptr<ComboAttachment> instrumentAttachment;
 
+        std::unique_ptr<juce::FileChooser> irFileChooser;
+        void openIRFileChooser();
+
         VUMeterComponent outputMeter;
 
         ModulePanel inputPanel   { "INPUT" };

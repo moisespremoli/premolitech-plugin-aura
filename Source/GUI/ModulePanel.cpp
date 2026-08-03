@@ -6,6 +6,8 @@ namespace aura
     {
         bypassButton.setVisible (false);
         comboBox.setVisible (false);
+        toolbarButton.setVisible (false);
+        statusLabel.setVisible (false);
     }
 
     juce::Slider& ModulePanel::addKnob (juce::AudioProcessorValueTreeState& apvts,
@@ -57,6 +59,30 @@ namespace aura
         return comboBox;
     }
 
+    juce::TextButton& ModulePanel::addToolbarButton (const juce::String& buttonText, std::function<void()> onClick)
+    {
+        hasToolbar = true;
+        toolbarButton.setButtonText (buttonText);
+        toolbarButton.setVisible (true);
+        toolbarButton.onClick = std::move (onClick);
+        toolbarButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff3d3d42));
+        toolbarButton.setColour (juce::TextButton::textColourOffId, juce::Colours::whitesmoke);
+        addAndMakeVisible (toolbarButton);
+
+        statusLabel.setVisible (true);
+        statusLabel.setJustificationType (juce::Justification::centredLeft);
+        statusLabel.setFont (juce::Font (juce::FontOptions (11.5f)));
+        statusLabel.setColour (juce::Label::textColourId, juce::Colours::whitesmoke.withAlpha (0.7f));
+        addAndMakeVisible (statusLabel);
+
+        return toolbarButton;
+    }
+
+    void ModulePanel::setStatusText (const juce::String& text)
+    {
+        statusLabel.setText (text, juce::dontSendNotification);
+    }
+
     void ModulePanel::paint (juce::Graphics& g)
     {
         auto bounds = getLocalBounds().toFloat();
@@ -86,9 +112,17 @@ namespace aura
         auto bounds = getLocalBounds().reduced (8);
         bounds.removeFromTop (18); // space consumed by the engraved title in paint()
 
-        auto headerRow = bounds.removeFromTop (hasCombo ? 24 : 0);
+        auto headerRow = bounds.removeFromTop ((hasCombo || hasToolbar) ? 24 : 0);
         if (hasCombo)
+        {
             comboBox.setBounds (headerRow);
+        }
+        else if (hasToolbar)
+        {
+            toolbarButton.setBounds (headerRow.removeFromLeft (100));
+            headerRow.removeFromLeft (8);
+            statusLabel.setBounds (headerRow);
+        }
 
         if (hasBypass)
         {

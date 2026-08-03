@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
 #include <memory>
+#include <functional>
 
 namespace aura
 {
@@ -25,6 +26,13 @@ namespace aura
         juce::ComboBox& addComboBox (juce::AudioProcessorValueTreeState& apvts,
                                       const juce::String& paramID, const juce::StringArray& choices);
 
+        // A small action button in the header row (e.g. "LOAD IR...") with a
+        // status label taking up the rest of the row to show e.g. the
+        // currently loaded file's name. Mutually exclusive with addComboBox()
+        // in practice - only one panel needs either.
+        juce::TextButton& addToolbarButton (const juce::String& buttonText, std::function<void()> onClick);
+        void setStatusText (const juce::String& text);
+
         void paint (juce::Graphics& g) override;
         void resized() override;
 
@@ -46,5 +54,9 @@ namespace aura
         juce::ComboBox comboBox;
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> comboAttachment;
         bool hasCombo = false;
+
+        juce::TextButton toolbarButton;
+        juce::Label statusLabel;
+        bool hasToolbar = false;
     };
 }

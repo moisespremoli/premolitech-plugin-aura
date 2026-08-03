@@ -76,6 +76,8 @@ namespace aura
 
         addAndMakeVisible (cabPanel);
         cabPanel.addBypassToggle (processor.apvts, ParamIDs::cabBypass);
+        cabPanel.addToolbarButton ("LOAD IR...", [this] { openIRFileChooser(); });
+        cabPanel.setStatusText (processor.getCabinetIRName());
         cabPanel.addKnob (processor.apvts, ParamIDs::cabMix, "MIX");
 
         addAndMakeVisible (eqPanel);
@@ -99,6 +101,22 @@ namespace aura
     AuraAudioProcessorEditor::~AuraAudioProcessorEditor()
     {
         setLookAndFeel (nullptr);
+    }
+
+    void AuraAudioProcessorEditor::openIRFileChooser()
+    {
+        irFileChooser = std::make_unique<juce::FileChooser> (
+            "Escolhe um ficheiro de IR (WAV/AIFF)", juce::File(), "*.wav;*.aif;*.aiff");
+
+        constexpr auto chooserFlags = juce::FileBrowserComponent::openMode
+                                     | juce::FileBrowserComponent::canSelectFiles;
+
+        irFileChooser->launchAsync (chooserFlags, [this] (const juce::FileChooser& chooser)
+        {
+            const auto file = chooser.getResult();
+            if (file != juce::File() && processor.loadCabinetIRFromFile (file))
+                cabPanel.setStatusText (processor.getCabinetIRName());
+        });
     }
 
     void AuraAudioProcessorEditor::rebuildBackgroundImage()

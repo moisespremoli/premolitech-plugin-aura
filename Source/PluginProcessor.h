@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "DSP/SignalChain.h"
+#include "DSP/Cab/CabModule.h"
 #include "Core/Instrument.h"
 
 namespace aura
@@ -45,11 +46,18 @@ namespace aura
         // decorative.
         float getOutputLevel() const { return outputLevel.load (std::memory_order_relaxed); }
 
+        // Loads a user-chosen IR into the cabinet module and remembers its
+        // path in the plugin state so presets/session restore reload it.
+        // Returns false if the file couldn't be read as audio.
+        bool loadCabinetIRFromFile (const juce::File& file);
+        juce::String getCabinetIRName() const;
+
     private:
         static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
         void doProcessBlock (juce::AudioBuffer<double>& buffer);
 
         SignalChain signalChain;
+        CabModule* cabModule = nullptr; // owned by signalChain; borrowed for IR loading/state restore
         std::atomic<float> outputLevel { 0.0f };
 
         // processBlock(float) bridges through this when the host (or the

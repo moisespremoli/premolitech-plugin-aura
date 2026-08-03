@@ -31,7 +31,12 @@ namespace aura
         // cabinet IR library is wired up.
         void loadPlaceholderImpulseResponse();
 
+        // Name shown in the GUI: either the loaded file's name, or a label
+        // marking the built-in placeholder.
+        juce::String getIRDisplayName() const { return currentIRName; }
+
     private:
+        juce::String currentIRName { "Cabinet Placeholder (built-in)" };
         // juce::dsp::Convolution is float-only internally (its FFT engine
         // doesn't have a double-precision path), while the rest of the
         // chain runs in double. This module is the bridge: it converts to

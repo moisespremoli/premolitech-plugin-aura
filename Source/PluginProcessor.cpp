@@ -12,6 +12,11 @@
 
 namespace aura
 {
+    namespace
+    {
+        constexpr auto irPathPropertyName = "cabIRFilePath";
+    }
+
     AuraAudioProcessor::AuraAudioProcessor()
         : AudioProcessor (BusesProperties()
                                .withInput ("Input", juce::AudioChannelSet::stereo(), true)
@@ -25,7 +30,11 @@ namespace aura
         signalChain.addModule (std::make_unique<NoiseGateModule> (apvts));
         signalChain.addModule (std::make_unique<CompressorModule> (apvts));
         signalChain.addModule (std::make_unique<AmpModule> (apvts));
-        signalChain.addModule (std::make_unique<CabModule> (apvts));
+
+        auto cab = std::make_unique<CabModule> (apvts);
+        cabModule = cab.get();
+        signalChain.addModule (std::move (cab));
+
         signalChain.addModule (std::make_unique<EQModule> (apvts));
         signalChain.addModule (std::make_unique<LimiterModule> (apvts));
     }
@@ -227,8 +236,31 @@ namespace aura
     void AuraAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
     {
         std::unique_ptr<juce::XmlElement> xml (getXmlFromBinary (data, sizeInBytes));
-        if (xml != nullptr && xml->hasTagName (apvts.state.getType()))
-            apvts.replaceState (juce::ValueTree::fromXml (*xml));
+        if (xml == nullptr || ! xml->hasTagName (apvts.state.getType()))
+            return;
+
+        apvts.replaceState (juce::ValueTree::fromXml (*xml));
+
+        // The IR file path is a custom property on the ValueTree (not an
+        // APVTS parameter), so replaceState() restores the property but not
+        // the actual loaded convolution buffer - reload it explicitly.
+        const auto irPath = apvts.state.getProperty (irPathPropertyName).toString();
+        if (irPath.isNotEmpty())
+            loadCabinetIRFromFile (juce::File (irPath));
+    }
+
+    bool AuraAudioProcessor::loadCabinetIRFromFile (const juce::File& file)
+    {
+        if (cabModule == nullptr || ! cabModule->loadImpulseResponse (file))
+            return false;
+
+        apvts.state.setProperty (irPathPropertyName, file.getFullPathName(), nullptr);
+        return true;
+    }
+
+    juce::String AuraAudioProcessor::getCabinetIRName() const
+    {
+        return cabModule != nullptr ? cabModule->getIRDisplayName() : juce::String();
     }
 }
 
