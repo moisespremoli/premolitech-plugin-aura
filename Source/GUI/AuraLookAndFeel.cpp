@@ -6,21 +6,23 @@ namespace aura
     namespace
     {
         const juce::Colour creamTop     (0xfffdfbf7);
-        const juce::Colour creamBottom  (0xffe6dbc4);
         const juce::Colour inkBrown     (0xff443322);
-        const juce::Colour scaleNumberColour (0xffe9dfc4);
+        const juce::Colour scaleNumberColour (0xffd9d3c4);
+        const juce::Colour slateTop     (0xff35393c);
+        const juce::Colour slateBottom  (0xff23262a);
+        const juce::Colour printedText  (0xffd9d3c4);
     }
 
     AuraLookAndFeel::AuraLookAndFeel()
     {
         setColour (juce::Slider::textBoxTextColourId, inkBrown);
         setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
-        setColour (juce::ComboBox::textColourId, inkBrown);
-        setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff8a7a60));
+        setColour (juce::ComboBox::textColourId, printedText);
+        setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff5a5f63));
         setColour (juce::PopupMenu::backgroundColourId, creamTop);
         setColour (juce::PopupMenu::textColourId, inkBrown);
         setColour (juce::PopupMenu::highlightedBackgroundColourId, juce::Colour (0xffcdbb8e));
-        setColour (juce::Label::textColourId, inkBrown);
+        setColour (juce::Label::textColourId, printedText);
     }
 
     void AuraLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
@@ -37,8 +39,9 @@ namespace aura
         const auto radius = outerRadius * 0.62f;
         const auto bounds = juce::Rectangle<float> (radius * 2.0f, radius * 2.0f).withCentre (centre);
 
-        // Printed numbered scale (vintage "1 to 11" dial plate) drawn on the
-        // panel around the knob, before the knob body itself.
+        // Printed numbered scale (0 to 10, like PLI-1A/PHATTER's dial
+        // plates) drawn straight on the steel panel around the knob, before
+        // the knob body itself.
         constexpr int numTicks = 11;
         for (int i = 0; i < numTicks; ++i)
         {
@@ -52,9 +55,9 @@ namespace aura
             const auto tickArea = juce::Rectangle<float> (20.0f, 12.0f).withCentre ({ tx, ty });
             g.setFont (tickFont);
             g.setColour (juce::Colours::black.withAlpha (0.5f));
-            g.drawText (juce::String (i + 1), tickArea.translated (0.0f, 1.0f), juce::Justification::centred);
+            g.drawText (juce::String (i), tickArea.translated (0.0f, 1.0f), juce::Justification::centred);
             g.setColour (scaleNumberColour);
-            g.drawText (juce::String (i + 1), tickArea, juce::Justification::centred);
+            g.drawText (juce::String (i), tickArea, juce::Justification::centred);
         }
 
         // Drop shadow, grounding the real knob photo onto the panel.
@@ -114,13 +117,16 @@ namespace aura
                                          int buttonX, int buttonY, int buttonW, int buttonH,
                                          juce::ComboBox&)
     {
+        // A small recessed dark-slate selector, like a tiny inset display
+        // window on the panel, rather than the old cream dropdown pill -
+        // fits the rest of the reskinned hardware-rack look.
         auto bounds = juce::Rectangle<float> (0.0f, 0.0f, (float) width, (float) height).reduced (1.0f);
 
-        juce::ColourGradient bodyGradient (creamTop, 0.0f, 0.0f, creamBottom, 0.0f, (float) height, false);
+        juce::ColourGradient bodyGradient (slateTop, 0.0f, 0.0f, slateBottom, 0.0f, (float) height, false);
         g.setGradientFill (bodyGradient);
-        g.fillRoundedRectangle (bounds, 4.0f);
-        g.setColour (juce::Colour (0xff8a7a60));
-        g.drawRoundedRectangle (bounds, 4.0f, 1.0f);
+        g.fillRoundedRectangle (bounds, 3.0f);
+        g.setColour (juce::Colours::black.withAlpha (0.5f));
+        g.drawRoundedRectangle (bounds, 3.0f, 1.0f);
 
         juce::Path arrow;
         auto arrowZone = juce::Rectangle<float> ((float) buttonX, (float) buttonY, (float) buttonW, (float) buttonH)
@@ -128,7 +134,7 @@ namespace aura
         arrow.addTriangle (arrowZone.getX(), arrowZone.getY(),
                            arrowZone.getRight(), arrowZone.getY(),
                            arrowZone.getCentreX(), arrowZone.getBottom());
-        g.setColour (inkBrown);
+        g.setColour (printedText);
         g.fillPath (arrow);
     }
 

@@ -7,17 +7,35 @@ namespace aura
 {
     namespace
     {
-        constexpr int tolexMargin    = 18;
-        constexpr int handleClearance = 34; // top gap left for the leather handle arch
-        constexpr int grilleHeight   = 46;
-        constexpr int headerHeight   = 92;
+        constexpr int panelMargin  = 14; // uniform edge margin, screws sit inset from here
+        constexpr int headerHeight = 92;
 
-        const juce::Colour creamTop     (0xfffdfbf7);
-        const juce::Colour creamBottom  (0xffe6dbc4);
-        const juce::Colour tanBorder    (0xff9c8a5c);
-        const juce::Colour engravedText (0xffece3ca);
+        const juce::Colour printedText  (0xffdcd6c8);
         const juce::Colour chromeLight  (0xfff0f0f0);
         const juce::Colour chromeDark   (0xff666666);
+
+        // A small chrome screw head, like the ones holding a real rack
+        // panel's faceplate on - drawn once at each of the panel's four
+        // corners (not per module - a single continuous panel, matching
+        // PLI-1A/PLI-2A/PHATTER, has no per-group hardware).
+        void drawScrew (juce::Graphics& g, juce::Point<float> centre)
+        {
+            constexpr float r = 5.0f;
+            juce::Rectangle<float> bounds (r * 2.0f, r * 2.0f);
+            bounds.setCentre (centre);
+
+            juce::ColourGradient grad (chromeLight, bounds.getX(), bounds.getY(),
+                                        chromeDark, bounds.getRight(), bounds.getBottom(), false);
+            g.setGradientFill (grad);
+            g.fillEllipse (bounds);
+            g.setColour (juce::Colours::black.withAlpha (0.4f));
+            g.drawEllipse (bounds, 0.5f);
+
+            juce::Path slot;
+            slot.addRoundedRectangle (-r * 0.7f, -0.6f, r * 1.4f, 1.2f, 0.5f);
+            g.setColour (juce::Colour (0xff2a2a2a));
+            g.fillPath (slot, juce::AffineTransform::rotation (0.5f).translated (centre.x, centre.y));
+        }
 
         // Lays a row of components out left-to-right, each given a width
         // proportional to its weight, so panels with more knobs get more
@@ -132,15 +150,7 @@ namespace aura
 
     juce::Rectangle<int> AuraAudioProcessorEditor::getPanelBounds() const
     {
-        return { tolexMargin, handleClearance,
-                 getWidth() - 2 * tolexMargin,
-                 getHeight() - handleClearance - grilleHeight - tolexMargin - 8 };
-    }
-
-    juce::Rectangle<int> AuraAudioProcessorEditor::getGrilleBounds() const
-    {
-        auto panel = getPanelBounds();
-        return { panel.getX(), panel.getBottom() + 8, panel.getWidth(), grilleHeight };
+        return getLocalBounds().reduced (panelMargin);
     }
 
     void AuraAudioProcessorEditor::rebuildBackgroundImage()
@@ -148,147 +158,70 @@ namespace aura
         backgroundImage = juce::Image (juce::Image::ARGB, getWidth(), getHeight(), true);
         juce::Graphics g (backgroundImage);
 
-        // Real photographed black pebbled tolex/leatherette, tiled to cover
-        // the whole cabinet body (replaces the old procedural gradient +
-        // synthetic weave noise).
-        {
-            const auto& tolexTexture = UIAssets::getTolexPanel();
-            if (tolexTexture.isValid())
-            {
-                g.setFillType (juce::FillType (tolexTexture, juce::AffineTransform()));
-                g.fillAll();
-                g.setFillType (juce::FillType (juce::Colours::black));
-            }
-            else
-            {
-                juce::ColourGradient tolexGradient (juce::Colour (0xff2a2a2a), getWidth() * 0.5f, getHeight() * 0.5f,
-                                                     juce::Colour (0xff0d0d0d), 0.0f, 0.0f, true);
-                g.setGradientFill (tolexGradient);
-                g.fillAll();
-            }
-
-            // Subtle vignette so the tiled texture reads as one large panel
-            // rather than an obviously repeating swatch.
-            juce::ColourGradient vignette (juce::Colours::transparentBlack, getWidth() * 0.5f, getHeight() * 0.5f,
-                                            juce::Colours::black.withAlpha (0.35f), 0.0f, 0.0f, true);
-            g.setGradientFill (vignette);
-            g.fillAll();
-        }
-
-        // Stitched seam just inside the outer edge.
-        {
-            juce::Path seam;
-            seam.addRoundedRectangle (10.0f, 10.0f, (float) getWidth() - 20.0f, (float) getHeight() - 20.0f, 14.0f);
-            juce::Path dashedSeam;
-            float dashLengths[] = { 4.0f, 4.0f };
-            juce::PathStrokeType (1.2f).createDashedStroke (dashedSeam, seam, dashLengths, 2);
-            g.setColour (juce::Colour (0xff554433).withAlpha (0.5f));
-            g.fillPath (dashedSeam);
-        }
-
-        // Chrome corner brackets.
-        auto drawCorner = [&] (float cx, float cy, float startAngle)
-        {
-            constexpr float size = 30.0f;
-            juce::Path corner;
-            corner.addPieSegment (cx - size, cy - size, size * 2.0f, size * 2.0f,
-                                   startAngle, startAngle + juce::MathConstants<float>::halfPi, 0.5f);
-            juce::ColourGradient grad (chromeLight, cx, cy, chromeDark, cx + size, cy + size, false);
-            g.setGradientFill (grad);
-            g.fillPath (corner);
-        };
-        drawCorner (18.0f, 18.0f, juce::MathConstants<float>::pi);
-        drawCorner ((float) getWidth() - 18.0f, 18.0f, juce::MathConstants<float>::halfPi);
-        drawCorner (18.0f, (float) getHeight() - 18.0f, juce::MathConstants<float>::pi + juce::MathConstants<float>::halfPi);
-        drawCorner ((float) getWidth() - 18.0f, (float) getHeight() - 18.0f, 0.0f);
-
-        // Real photographed leather carrying handle, arched over the top edge.
-        {
-            const auto& handleImage = UIAssets::getHandle();
-            if (handleImage.isValid())
-            {
-                const float handleWidth = 200.0f;
-                const float aspect = (float) handleImage.getHeight() / (float) handleImage.getWidth();
-                const float handleHeight = handleWidth * aspect;
-                juce::Rectangle<float> target (0.0f, 0.0f, handleWidth, handleHeight);
-                target.setCentre ({ getWidth() * 0.5f, 18.0f });
-                g.drawImage (handleImage, target, juce::RectanglePlacement::centred);
-            }
-        }
-
-        // Real photographed sparkle grille cloth, tiled to fill the grille
-        // strip - baked into the cached background since it's static (only
-        // the VU needle above it animates).
-        {
-            auto grille = getGrilleBounds().toFloat();
-            const auto& grilleImage = UIAssets::getGrille();
-            if (grilleImage.isValid())
-            {
-                g.setFillType (juce::FillType (grilleImage, juce::AffineTransform::translation (
-                    grille.getX(), grille.getY())));
-                g.fillRoundedRectangle (grille, 6.0f);
-                g.setFillType (juce::FillType (juce::Colours::black));
-            }
-            else
-            {
-                g.setColour (juce::Colour (0xff2b261f));
-                g.fillRoundedRectangle (grille, 6.0f);
-            }
-
-            g.setColour (juce::Colour (0xff0d0d0d));
-            g.drawRoundedRectangle (grille, 6.0f, 2.0f);
-        }
-    }
-
-    void AuraAudioProcessorEditor::paint (juce::Graphics& g)
-    {
-        g.drawImageAt (backgroundImage, 0, 0);
-
-        auto panel = getPanelBounds();
-
-        // Worn steel backplate behind every module panel - the modules' own
-        // gaps show this through, so the panel reads as one continuous aged
-        // metal control plate rather than separate floating tiles. Tile
-        // origin is the editor's own (0,0) - ModulePanel uses the matching
-        // -getX()/-getY() offset so its own steel fill lines up exactly
-        // with this one instead of restarting at each panel's corner.
+        // One continuous real photographed weathered steel panel, tiled to
+        // cover the whole window - no separate cabinet/tolex body and
+        // control-panel plate; the other Premoli Labs plug-ins are a single
+        // painted panel front to back.
         const auto& steelTexture = UIAssets::getSteelPanel();
         if (steelTexture.isValid())
         {
             g.setFillType (juce::FillType (steelTexture, juce::AffineTransform()));
-            g.fillRoundedRectangle (panel.toFloat(), 10.0f);
+            g.fillAll();
             g.setFillType (juce::FillType (juce::Colours::black));
         }
         else
         {
-            juce::ColourGradient panelGradient (creamTop, 0.0f, (float) panel.getY(),
-                                                 creamBottom, 0.0f, (float) panel.getBottom(), false);
-            g.setGradientFill (panelGradient);
-            g.fillRoundedRectangle (panel.toFloat(), 10.0f);
+            g.setColour (juce::Colour (0xff3a4148));
+            g.fillAll();
         }
-        g.setColour (tanBorder.withAlpha (0.7f));
-        g.drawRoundedRectangle (panel.toFloat().reduced (1.0f), 10.0f, 1.5f);
 
-        // Header: brand wordmark, jewel power light. Engraved-metal look -
-        // pale parchment ink with a soft dark shadow so it reads clearly
-        // against the worn steel instead of the old dark-ink-on-cream look.
-        auto drawEngraved = [&] (const juce::String& text, juce::Rectangle<int> area, juce::Justification j)
+        // Subtle vignette so the tiled texture reads as one large panel
+        // rather than an obviously repeating swatch.
+        juce::ColourGradient vignette (juce::Colours::transparentBlack, getWidth() * 0.5f, getHeight() * 0.5f,
+                                        juce::Colours::black.withAlpha (0.3f), 0.0f, 0.0f, true);
+        g.setGradientFill (vignette);
+        g.fillAll();
+
+        g.setColour (juce::Colours::black.withAlpha (0.5f));
+        g.drawRect (getLocalBounds().toFloat(), 2.0f);
+
+        for (auto corner : { juce::Point<float> ((float) panelMargin + 8.0f, (float) panelMargin + 8.0f),
+                              juce::Point<float> ((float) getWidth() - panelMargin - 8.0f, (float) panelMargin + 8.0f),
+                              juce::Point<float> ((float) panelMargin + 8.0f, (float) getHeight() - panelMargin - 8.0f),
+                              juce::Point<float> ((float) getWidth() - panelMargin - 8.0f, (float) getHeight() - panelMargin - 8.0f) })
+            drawScrew (g, corner);
+    }
+
+    void AuraAudioProcessorEditor::paint (juce::Graphics& g)
+    {
+        // The single steel panel (with its corner screws) is already fully
+        // baked into backgroundImage by rebuildBackgroundImage() - nothing
+        // else to fill here, matching the other Premoli Labs plug-ins'
+        // one-continuous-panel construction instead of a floating inset box.
+        g.drawImageAt (backgroundImage, 0, 0);
+
+        auto panel = getPanelBounds();
+
+        // Header: bold sans-serif wordmark (no italics/script), like PLI-1A/
+        // PLI-2A's "PREMOLI labs" print, plus a soft dark drop shadow so it
+        // reads clearly against the steel.
+        auto printLabel = [&] (const juce::String& text, juce::Rectangle<int> area, juce::Justification j)
         {
             g.setColour (juce::Colours::black.withAlpha (0.55f));
             g.drawText (text, area.translated (0, 1), j);
-            g.setColour (engravedText);
+            g.setColour (printedText);
             g.drawText (text, area, j);
         };
 
-        g.setFont (juce::Font (juce::FontOptions (15.0f)).boldened().withExtraKerningFactor (0.18f));
-        drawEngraved ("PREMOLI LABS", { panel.getX() + 24, panel.getY() + 16, 260, 20 }, juce::Justification::centredLeft);
+        g.setFont (juce::Font (juce::FontOptions (22.0f)).boldened().withExtraKerningFactor (0.06f));
+        printLabel ("PREMOLI LABS", { panel.getX() + 4, panel.getY() + 14, 260, 26 }, juce::Justification::centredLeft);
 
-        g.setFont (juce::Font (juce::FontOptions (36.0f)).italicised().boldened());
-        drawEngraved ("AURA", { panel.getX() + 22, panel.getY() + 34, 220, 44 }, juce::Justification::centredLeft);
+        g.setFont (juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.14f));
+        printLabel ("AURA", { panel.getX() + 6, panel.getY() + 42, 220, 18 }, juce::Justification::centredLeft);
 
         {
-            juce::Rectangle<float> jewel (30.0f, 30.0f);
-            jewel.setCentre ({ (float) panel.getX() + 250.0f, (float) panel.getY() + (float) headerHeight * 0.5f });
+            juce::Rectangle<float> jewel (26.0f, 26.0f);
+            jewel.setCentre ({ (float) panel.getX() + 232.0f, (float) panel.getY() + (float) headerHeight * 0.5f });
 
             const auto& jewelImage = UIAssets::getJewelRed();
             if (jewelImage.isValid())
@@ -302,10 +235,10 @@ namespace aura
         }
 
         g.setFont (juce::Font (juce::FontOptions (10.0f)).boldened().withExtraKerningFactor (0.05f));
-        drawEngraved ("INSTRUMENT", instrumentBox.getBounds().translated (0, -16).withHeight (14),
-                      juce::Justification::centred);
-        drawEngraved ("OUTPUT LEVEL", outputMeter.getBounds().translated (0, -16).withHeight (14),
-                      juce::Justification::centred);
+        printLabel ("INSTRUMENT", instrumentBox.getBounds().translated (0, -16).withHeight (14),
+                    juce::Justification::centred);
+        printLabel ("OUTPUT LEVEL", outputMeter.getBounds().translated (0, -16).withHeight (14),
+                    juce::Justification::centred);
     }
 
     void AuraAudioProcessorEditor::resized()
@@ -314,7 +247,9 @@ namespace aura
         auto header = panel.removeFromTop (headerHeight);
 
         instrumentBox.setBounds (header.removeFromRight (190).reduced (14, 30));
-        outputMeter.setBounds (header.removeFromRight (130).reduced (8, 18));
+        // Sized close to the real vu_frame.png aspect ratio (~1.68:1) so
+        // the bezel image doesn't stretch noticeably.
+        outputMeter.setBounds (header.removeFromRight (106).reduced (8, 19));
 
         auto body = panel.reduced (16, 10);
 

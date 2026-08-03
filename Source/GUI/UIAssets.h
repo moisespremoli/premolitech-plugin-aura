@@ -28,8 +28,6 @@ namespace aura::UIAssets
     const juce::Image& getKnobFrame (int frameIndex);
     const juce::Image& getJewelRed();
     const juce::Image& getJewelGreen();
-    const juce::Image& getHandle();
-    const juce::Image& getGrille();
     const juce::Image& getSteelPanel();
-    const juce::Image& getTolexPanel();
+    const juce::Image& getVuFrame();
 }

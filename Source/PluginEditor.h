@@ -8,17 +8,16 @@
 
 namespace aura
 {
-    // Full "vintage tube amp" GUI, mixing procedural juce::Graphics drawing
-    // with real processed photographic materials (tolex, worn steel panel,
-    // leather handle, grille cloth, chicken-head knobs, jewel lights): a
-    // black tolex-covered cabinet (leather handle, chrome corners) around an
-    // aged/worn steel control panel, with a branded header (wordmark, jewel
-    // power light, analogue VU needle, instrument selector) over module
-    // panels that mirror the real signal chain (Gate -> Comp -> Amp -> Cab
-    // -> EQ -> Limiter), each drawn with numbered-scale knobs and a jewel
-    // bypass LED. The colour palette and worn-metal look evoke vintage
-    // American tube amps in general, not any one manufacturer's specific
-    // trade dress or logo.
+    // Hardware-rack-style GUI matching the visual family of the other
+    // Premoli Labs plug-ins (PLI-1A, PLI-2A, PHATTER): one continuous
+    // weathered blue-grey steel panel (real photographed material) with
+    // chrome corner screws, a branded header (bold wordmark, jewel power
+    // light, analogue VU needle behind a real photographed bezel,
+    // instrument selector), and labelled knob groups mirroring the real
+    // signal chain (Gate -> Comp -> Amp -> Cab -> EQ -> Limiter) printed
+    // straight onto the panel - no per-module boxes, no cabinet/tolex/
+    // handle motif. Knobs are real photographed "chicken-head" pointer
+    // knobs, same asset family as PLI-2A's.
     class AuraAudioProcessorEditor : public juce::AudioProcessorEditor
     {
     public:
@@ -37,7 +36,6 @@ namespace aura
         juce::Image backgroundImage;
         void rebuildBackgroundImage();
         juce::Rectangle<int> getPanelBounds() const;
-        juce::Rectangle<int> getGrilleBounds() const;
 
         juce::ComboBox instrumentBox;
         std::unique_ptr<ComboAttachment> instrumentAttachment;

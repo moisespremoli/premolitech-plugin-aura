@@ -1,39 +1,12 @@
 #include "ModulePanel.h"
-#include "UIAssets.h"
 
 namespace aura
 {
     namespace
     {
-        const juce::Colour creamTop     (0xfffdfbf7);
         const juce::Colour creamBottom  (0xffe6dbc4);
-        const juce::Colour tanBorder    (0xff9c8a5c);
         const juce::Colour inkBrown     (0xff443322);
-        const juce::Colour engravedText (0xffe9dfc4);
-        const juce::Colour chromeLight  (0xfff0f0f0);
-        const juce::Colour chromeDark   (0xff666666);
-
-        // A small chrome screw head, like the ones holding a real amp's
-        // control-panel faceplate on - purely decorative, drawn at each
-        // panel's four corners.
-        void drawScrew (juce::Graphics& g, juce::Point<float> centre)
-        {
-            constexpr float r = 5.0f;
-            juce::Rectangle<float> bounds (r * 2.0f, r * 2.0f);
-            bounds.setCentre (centre);
-
-            juce::ColourGradient grad (chromeLight, bounds.getX(), bounds.getY(),
-                                        chromeDark, bounds.getRight(), bounds.getBottom(), false);
-            g.setGradientFill (grad);
-            g.fillEllipse (bounds);
-            g.setColour (juce::Colours::black.withAlpha (0.4f));
-            g.drawEllipse (bounds, 0.5f);
-
-            juce::Path slot;
-            slot.addRoundedRectangle (-r * 0.7f, -0.6f, r * 1.4f, 1.2f, 0.5f);
-            g.setColour (juce::Colour (0xff2a2a2a));
-            g.fillPath (slot, juce::AffineTransform::rotation (0.5f).translated (centre.x, centre.y));
-        }
+        const juce::Colour printedText  (0xffd9d3c4);
     }
 
     ModulePanel::ModulePanel (juce::String titleText) : title (std::move (titleText))
@@ -54,7 +27,7 @@ namespace aura
         knob->caption.setText (captionText, juce::dontSendNotification);
         knob->caption.setJustificationType (juce::Justification::centred);
         knob->caption.setFont (juce::Font (juce::FontOptions (11.0f)).boldened());
-        knob->caption.setColour (juce::Label::textColourId, engravedText);
+        knob->caption.setColour (juce::Label::textColourId, printedText);
 
         addAndMakeVisible (knob->slider);
         addAndMakeVisible (knob->caption);
@@ -106,7 +79,7 @@ namespace aura
         statusLabel.setVisible (true);
         statusLabel.setJustificationType (juce::Justification::centredLeft);
         statusLabel.setFont (juce::Font (juce::FontOptions (10.0f)));
-        statusLabel.setColour (juce::Label::textColourId, engravedText.withAlpha (0.8f));
+        statusLabel.setColour (juce::Label::textColourId, printedText.withAlpha (0.8f));
         statusLabel.setMinimumHorizontalScale (0.7f);
         addAndMakeVisible (statusLabel);
 
@@ -120,51 +93,25 @@ namespace aura
 
     void ModulePanel::paint (juce::Graphics& g)
     {
-        auto bounds = getLocalBounds().toFloat();
-
-        const auto& steelTexture = UIAssets::getSteelPanel();
-        if (steelTexture.isValid())
-        {
-            // Tile origin uses this panel's position within the editor (not
-            // local 0,0), so the texture lines up with the big steel
-            // backplate drawn behind every module instead of restarting at
-            // each panel's own corner.
-            g.setFillType (juce::FillType (steelTexture, juce::AffineTransform::translation (
-                (float) -getX(), (float) -getY())));
-            g.fillRoundedRectangle (bounds, 6.0f);
-            g.setFillType (juce::FillType (juce::Colours::black));
-        }
-        else
-        {
-            juce::ColourGradient panelGradient (creamTop, 0.0f, 0.0f, creamBottom, 0.0f, bounds.getHeight(), false);
-            g.setGradientFill (panelGradient);
-            g.fillRoundedRectangle (bounds, 6.0f);
-        }
-
-        g.setColour (tanBorder.withAlpha (0.5f));
-        g.drawRoundedRectangle (bounds.reduced (1.0f), 6.0f, 1.5f);
-
-        for (auto corner : { juce::Point<float> (14.0f, 14.0f),
-                              juce::Point<float> (bounds.getWidth() - 14.0f, 14.0f),
-                              juce::Point<float> (14.0f, bounds.getHeight() - 14.0f),
-                              juce::Point<float> (bounds.getWidth() - 14.0f, bounds.getHeight() - 14.0f) })
-            drawScrew (g, corner);
-
-        // Engraved-metal look: pale parchment text with a soft dark drop
-        // shadow, legible against the worn steel instead of the old plain
-        // ink-on-cream silkscreen look.
-        auto titleArea = juce::Rectangle<int> (24, 4, getWidth() - 44, 18);
-        g.setFont (juce::Font (juce::FontOptions (12.5f)).withExtraKerningFactor (0.1f).boldened());
-        g.setColour (juce::Colours::black.withAlpha (0.55f));
-        g.drawText (title, titleArea.translated (0, 1), juce::Justification::centredLeft);
-        g.setColour (engravedText);
+        // No background, border, or corner screws here by design - this
+        // group sits directly on the editor's single continuous steel
+        // panel (see PluginEditor::paint()), matching how PLI-1A/PLI-2A/
+        // PHATTER print all their labelled knob groups straight onto one
+        // seamless painted panel rather than nesting boxes.
+        auto titleArea = juce::Rectangle<int> (2, 2, getWidth() - 4, 16);
+        g.setFont (juce::Font (juce::FontOptions (12.0f)).withExtraKerningFactor (0.12f).boldened());
+        g.setColour (printedText);
         g.drawText (title, titleArea, juce::Justification::centredLeft);
+
+        g.setColour (printedText.withAlpha (0.35f));
+        g.drawLine ((float) titleArea.getX(), (float) titleArea.getBottom() + 1.0f,
+                    (float) getWidth() - 2.0f, (float) titleArea.getBottom() + 1.0f, 1.0f);
     }
 
     void ModulePanel::resized()
     {
-        auto bounds = getLocalBounds().reduced (20, 8);
-        bounds.removeFromTop (14); // space consumed by the title in paint()
+        auto bounds = getLocalBounds().reduced (4, 2);
+        bounds.removeFromTop (20); // space consumed by the title + divider in paint()
 
         auto headerRow = bounds.removeFromTop ((hasCombo || hasToolbar) ? 24 : 0);
         if (hasCombo)
@@ -181,7 +128,7 @@ namespace aura
         if (hasBypass)
         {
             constexpr int ledSize = 16;
-            bypassButton.setBounds (getWidth() - ledSize - 22, 6, ledSize, ledSize);
+            bypassButton.setBounds (getWidth() - ledSize - 4, 1, ledSize, ledSize);
         }
 
         if (! knobs.empty())

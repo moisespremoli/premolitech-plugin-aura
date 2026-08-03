@@ -69,10 +69,8 @@ juce_add_binary_data(AURAAssets SOURCES
     ${AURA_KNOB_FRAMES}
     Resources/UI/jewel_red.png
     Resources/UI/jewel_green.png
-    Resources/UI/handle.png
-    Resources/UI/grille.png
     Resources/UI/steel_panel.png
-    Resources/UI/tolex_panel.png)
+    Resources/UI/vu_frame.png)
 
 target_compile_definitions(AURA PUBLIC
     JUCE_WEB_BROWSER=0

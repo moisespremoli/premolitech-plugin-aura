@@ -97,27 +97,15 @@ namespace aura::UIAssets
         return loadOnce (image, BinaryData::jewel_green_png, BinaryData::jewel_green_pngSize);
     }
 
-    const juce::Image& getHandle()
-    {
-        static juce::Image image;
-        return loadOnce (image, BinaryData::handle_png, BinaryData::handle_pngSize);
-    }
-
-    const juce::Image& getGrille()
-    {
-        static juce::Image image;
-        return loadOnce (image, BinaryData::grille_png, BinaryData::grille_pngSize);
-    }
-
     const juce::Image& getSteelPanel()
     {
         static juce::Image image;
         return loadOnce (image, BinaryData::steel_panel_png, BinaryData::steel_panel_pngSize);
     }
 
-    const juce::Image& getTolexPanel()
+    const juce::Image& getVuFrame()
     {
         static juce::Image image;
-        return loadOnce (image, BinaryData::tolex_panel_png, BinaryData::tolex_panel_pngSize);
+        return loadOnce (image, BinaryData::vu_frame_png, BinaryData::vu_frame_pngSize);
     }
 }

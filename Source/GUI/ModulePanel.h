@@ -7,12 +7,16 @@
 
 namespace aura
 {
-    // A single "module" on the amp's front panel: an inset metal frame with
-    // an engraved title, an optional bypass LED in the corner, an optional
-    // combo box (e.g. the amp model selector), and a row of rotary knobs
-    // each with a caption underneath. Used once per DSP module (Gate, Comp,
-    // Amp, Cab, EQ, Limiter) so the panel layout mirrors the real signal
-    // chain instead of being a flat parameter list.
+    // A single labelled group of controls on the amp's single continuous
+    // steel front panel: a printed section title, an optional bypass LED,
+    // an optional combo box (e.g. the amp model selector), and a row of
+    // rotary knobs each with a caption underneath. Deliberately has no
+    // background fill, border, or corner screws of its own - unlike a real
+    // Premoli Labs rack unit (PLI-1A, PLI-2A, PHATTER), which prints all of
+    // its labelled knob groups directly on one seamless painted panel
+    // rather than nesting each group in its own bordered box. Used once per
+    // DSP module (Gate, Comp, Amp, Cab, EQ, Limiter) so the panel layout
+    // mirrors the real signal chain instead of being a flat parameter list.
     class ModulePanel : public juce::Component
     {
     public:

@@ -1,4 +1,5 @@
 #include "VUMeterComponent.h"
+#include "UIAssets.h"
 
 namespace aura
 {
@@ -59,23 +60,46 @@ namespace aura
     {
         auto bounds = getLocalBounds().toFloat();
 
-        // Weathered chrome bezel - slightly darker/warmer than a brand-new
-        // one, to sit with the aged-steel panel around it.
-        juce::ColourGradient frameGradient (juce::Colour (0xffe8e4d8), bounds.getX(), bounds.getY(),
-                                             juce::Colour (0xff5a564c), bounds.getRight(), bounds.getBottom(), false);
-        g.setGradientFill (frameGradient);
-        g.fillRoundedRectangle (bounds, 6.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.35f));
-        g.drawRoundedRectangle (bounds.reduced (0.5f), 6.0f, 1.0f);
+        // Real photographed dark-metal VU bezel (same asset family as the
+        // other Premoli Labs plug-ins' VU frame), stretched to the
+        // component's bounds - see the knob comment in AuraLookAndFeel for
+        // why this uses setFillType()+fillRect() rather than drawImage()
+        // inside a child component's paint().
+        const auto& frameImage = UIAssets::getVuFrame();
+        juce::Rectangle<float> face;
+        if (frameImage.isValid())
+        {
+            const auto sx = bounds.getWidth() / (float) frameImage.getWidth();
+            const auto sy = bounds.getHeight() / (float) frameImage.getHeight();
+            g.setFillType (juce::FillType (frameImage, juce::AffineTransform::scale (sx, sy)));
+            g.fillRect (bounds);
+            g.setFillType (juce::FillType (juce::Colours::black));
 
-        auto face = bounds.reduced (5.0f);
+            // Inner viewing-hole fractions measured directly from the
+            // source frame image (left 8.76% / top 15.50% / right 8.53% /
+            // bottom 15.12% of its own bounds), so our own drawn face sits
+            // exactly inside the frame's cutout instead of guessing insets.
+            face = bounds.withTrimmedLeft (bounds.getWidth() * 0.0876f)
+                         .withTrimmedTop (bounds.getHeight() * 0.1550f)
+                         .withTrimmedRight (bounds.getWidth() * 0.0853f)
+                         .withTrimmedBottom (bounds.getHeight() * 0.1512f);
+        }
+        else
+        {
+            juce::ColourGradient frameGradient (juce::Colour (0xffe8e4d8), bounds.getX(), bounds.getY(),
+                                                 juce::Colour (0xff5a564c), bounds.getRight(), bounds.getBottom(), false);
+            g.setGradientFill (frameGradient);
+            g.fillRoundedRectangle (bounds, 6.0f);
+            face = bounds.reduced (5.0f);
+        }
 
-        // Aged parchment face - warm radial tone, darker at the rim like
-        // old paper, rather than a flat bright cream.
+        // Warm cream VU face - matches the "VU LEVEL INDICATOR" faces used
+        // across the other Premoli Labs plug-ins - drawn procedurally
+        // inside the real frame's cutout so the live needle can animate.
         juce::ColourGradient faceGradient (juce::Colour (0xfff2e9cf), face.getCentreX(), face.getCentreY() - face.getHeight() * 0.15f,
                                             juce::Colour (0xffcfc09a), face.getX(), face.getY(), true);
         g.setGradientFill (faceGradient);
-        g.fillRoundedRectangle (face, 3.0f);
+        g.fillRect (face);
 
         // A few small fixed foxing/grime blotches - own design detail, not
         // copied from any reference art - so the face doesn't read as a
@@ -89,7 +113,7 @@ namespace aura
         }
 
         g.setColour (juce::Colour (0xff2a2018));
-        g.drawRoundedRectangle (face, 3.0f, 1.2f);
+        g.drawRect (face, 1.2f);
 
         auto labelArea = face.removeFromBottom (13.0f);
         const auto pivot = juce::Point<float> (face.getCentreX(), face.getBottom() - 2.0f);
