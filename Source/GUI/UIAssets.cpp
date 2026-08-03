@@ -108,4 +108,10 @@ namespace aura::UIAssets
         static juce::Image image;
         return loadOnce (image, BinaryData::vu_frame_png, BinaryData::vu_frame_pngSize);
     }
+
+    const juce::Image& getPanelPhoto()
+    {
+        static juce::Image image;
+        return loadOnce (image, BinaryData::panel_photo_png, BinaryData::panel_photo_pngSize);
+    }
 }

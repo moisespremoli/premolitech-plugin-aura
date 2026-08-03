@@ -8,16 +8,15 @@
 
 namespace aura
 {
-    // Hardware-rack-style GUI matching the visual family of the other
-    // Premoli Labs plug-ins (PLI-1A, PLI-2A, PHATTER): one continuous
-    // weathered blue-grey steel panel (real photographed material) with
-    // chrome corner screws, a branded header (bold wordmark, jewel power
-    // light, analogue VU needle behind a real photographed bezel,
-    // instrument selector), and labelled knob groups mirroring the real
-    // signal chain (Gate -> Comp -> Amp -> Cab -> EQ -> Limiter) printed
-    // straight onto the panel - no per-module boxes, no cabinet/tolex/
-    // handle motif. Knobs are real photographed "chicken-head" pointer
-    // knobs, same asset family as PLI-2A's.
+    // GUI built directly on top of a single user-supplied reference photo
+    // (a full mock-up of the AURA panel, printed labels/scale and all),
+    // used as-is for the background. Every real control (knob, bypass
+    // jewel, combo box, VU meter) is placed at an explicit pixel position
+    // measured from that photo (see the *_GATE_JEWEL/*_KNOB-style constants
+    // in PluginEditor.cpp) instead of an auto-computed layout, so each
+    // control lines up with the matching cutout/label already drawn in the
+    // image. AuraLookAndFeel's own printed knob scale is switched off
+    // (showPrintedScale = false) since the photo already prints one.
     class AuraAudioProcessorEditor : public juce::AudioProcessorEditor
     {
     public:
@@ -32,10 +31,6 @@ namespace aura
 
         AuraAudioProcessor& processor;
         AuraLookAndFeel lookAndFeel;
-
-        juce::Image backgroundImage;
-        void rebuildBackgroundImage();
-        juce::Rectangle<int> getPanelBounds() const;
 
         juce::ComboBox instrumentBox;
         std::unique_ptr<ComboAttachment> instrumentAttachment;

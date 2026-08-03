@@ -37,10 +37,39 @@ namespace aura
         juce::TextButton& addToolbarButton (const juce::String& buttonText, std::function<void()> onClick);
         void setStatusText (const juce::String& text);
 
+        // Positions every knob added so far at an explicit centre (given in
+        // this component's PARENT's coordinate space, translated to local
+        // internally) instead of the normal even-distribution layout, and
+        // hides the knob captions - for panels drawn over a background
+        // image that already shows each knob's real position and printed
+        // label (e.g. a photographed faceplate used as-is). Also suppresses
+        // this panel's own title/divider drawing, since the label is
+        // already baked into that background. Bounds still need to be set
+        // (as usual, via setBounds()) large enough to contain every knob's
+        // circle, since JUCE clips a component's children to its own
+        // bounds.
+        void layoutKnobsExplicit (const std::vector<juce::Point<int>>& centresInParentSpace, int diameter);
+
+        // As layoutKnobsExplicit(), for the single bypass LED.
+        void layoutBypassExplicit (juce::Point<int> centreInParentSpace, int diameter);
+
+        // As layoutKnobsExplicit(), for the combo box / toolbar button.
+        void layoutComboExplicit (juce::Rectangle<int> boundsInParentSpace);
+        void layoutToolbarExplicit (juce::Rectangle<int> buttonBoundsInParentSpace,
+                                     juce::Rectangle<int> statusBoundsInParentSpace);
+
+        // Switches on explicit-layout mode (see layoutKnobsExplicit) before
+        // the first setBounds()/resized() pass, so the combo box/toolbar
+        // button - which still use the normal header-row layout - don't
+        // reserve space for a title that will never be drawn. Call this
+        // once, right after adding all of a panel's controls.
+        void setExplicitLayoutMode (bool shouldUseExplicitLayout);
+
         void paint (juce::Graphics& g) override;
         void resized() override;
 
     private:
+        bool explicitLayout = false;
         juce::String title;
 
         struct Knob

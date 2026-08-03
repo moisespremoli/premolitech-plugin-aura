@@ -4,14 +4,9 @@
 
 namespace aura
 {
-    // Hand-drawn "vintage tube amp" look, entirely procedural (gradients/
-    // paths/text - no bitmaps): black chicken-head knobs on a printed
-    // numbered scale (1-11), jewel-style LED toggles for module bypass, and
-    // ivory/cream combo boxes with a thin chrome bezel. Applied globally to
-    // the editor via setLookAndFeel(). Colour choices deliberately evoke
-    // "vintage American tube amp" in general (cream panel, black covering,
-    // chrome corners) rather than any single manufacturer's specific trade
-    // dress or logo.
+    // Hardware-panel look mixing real photographed materials (chicken-head
+    // knobs, jewel LEDs) with procedural drawing (printed numbered scale,
+    // combo box). Applied globally to the editor via setLookAndFeel().
     class AuraLookAndFeel : public juce::LookAndFeel_V4
     {
     public:
@@ -30,5 +25,11 @@ namespace aura
 
         juce::Font getComboBoxFont (juce::ComboBox&) override;
         juce::Font getLabelFont (juce::Label&) override;
+
+        // When the background already prints its own numbered dial scale
+        // (e.g. a photographed panel used as-is), set this false so
+        // drawRotarySlider() only draws the knob itself and doesn't
+        // superimpose a second, likely-misaligned scale on top of it.
+        bool showPrintedScale = true;
     };
 }

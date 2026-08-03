@@ -91,8 +91,51 @@ namespace aura
         statusLabel.setText (text, juce::dontSendNotification);
     }
 
+    void ModulePanel::layoutKnobsExplicit (const std::vector<juce::Point<int>>& centresInParentSpace, int diameter)
+    {
+        explicitLayout = true;
+        for (size_t i = 0; i < knobs.size() && i < centresInParentSpace.size(); ++i)
+        {
+            const auto centreLocal = centresInParentSpace[i] - getPosition();
+            knobs[i]->slider.setBounds (juce::Rectangle<int> (diameter, diameter).withCentre (centreLocal));
+            knobs[i]->caption.setVisible (false);
+        }
+    }
+
+    void ModulePanel::layoutBypassExplicit (juce::Point<int> centreInParentSpace, int diameter)
+    {
+        explicitLayout = true;
+        const auto centreLocal = centreInParentSpace - getPosition();
+        bypassButton.setBounds (juce::Rectangle<int> (diameter, diameter).withCentre (centreLocal));
+    }
+
+    void ModulePanel::setExplicitLayoutMode (bool shouldUseExplicitLayout)
+    {
+        explicitLayout = shouldUseExplicitLayout;
+    }
+
+    void ModulePanel::layoutComboExplicit (juce::Rectangle<int> boundsInParentSpace)
+    {
+        explicitLayout = true;
+        comboBox.setBounds (boundsInParentSpace.translated (-getPosition().x, -getPosition().y));
+    }
+
+    void ModulePanel::layoutToolbarExplicit (juce::Rectangle<int> buttonBoundsInParentSpace,
+                                              juce::Rectangle<int> statusBoundsInParentSpace)
+    {
+        explicitLayout = true;
+        toolbarButton.setBounds (buttonBoundsInParentSpace.translated (-getPosition().x, -getPosition().y));
+        statusLabel.setBounds (statusBoundsInParentSpace.translated (-getPosition().x, -getPosition().y));
+    }
+
     void ModulePanel::paint (juce::Graphics& g)
     {
+        // In explicit-layout mode the section title and knob captions are
+        // already baked into a background image (see PluginEditor) - drawing
+        // our own here would just duplicate/misalign them.
+        if (explicitLayout)
+            return;
+
         // No background, border, or corner screws here by design - this
         // group sits directly on the editor's single continuous steel
         // panel (see PluginEditor::paint()), matching how PLI-1A/PLI-2A/
@@ -111,7 +154,8 @@ namespace aura
     void ModulePanel::resized()
     {
         auto bounds = getLocalBounds().reduced (4, 2);
-        bounds.removeFromTop (20); // space consumed by the title + divider in paint()
+        if (! explicitLayout)
+            bounds.removeFromTop (20); // space consumed by the title + divider in paint()
 
         auto headerRow = bounds.removeFromTop ((hasCombo || hasToolbar) ? 24 : 0);
         if (hasCombo)
@@ -125,13 +169,13 @@ namespace aura
             statusLabel.setBounds (headerRow);
         }
 
-        if (hasBypass)
+        if (hasBypass && ! explicitLayout)
         {
             constexpr int ledSize = 16;
             bypassButton.setBounds (getWidth() - ledSize - 4, 1, ledSize, ledSize);
         }
 
-        if (! knobs.empty())
+        if (! knobs.empty() && ! explicitLayout)
         {
             const auto knobAreaWidth = bounds.getWidth() / (int) knobs.size();
             for (auto& k : knobs)

@@ -29,35 +29,41 @@ namespace aura
                                              float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
                                              juce::Slider&)
     {
-        // The slider's full allotted area is deliberately larger than the
-        // knob itself, leaving a margin for the printed numbered scale
-        // (like a real amp's panel silkscreen) to sit just inside the
-        // component's own bounds - drawing further out would get clipped.
+        // When showPrintedScale is on, the slider's full allotted area is
+        // deliberately larger than the knob itself, leaving a margin for
+        // the printed numbered scale (like a real amp's panel silkscreen)
+        // to sit just inside the component's own bounds - drawing further
+        // out would get clipped. When it's off (a background image already
+        // prints its own scale), the knob fills almost all of its bounds
+        // instead, since there's no margin left to reserve.
         auto outerBounds = juce::Rectangle<int> (x, y, width, height).toFloat().reduced (2.0f);
         const auto outerRadius = juce::jmin (outerBounds.getWidth(), outerBounds.getHeight()) / 2.0f;
         const auto centre = outerBounds.getCentre();
-        const auto radius = outerRadius * 0.62f;
+        const auto radius = outerRadius * (showPrintedScale ? 0.62f : 0.94f);
         const auto bounds = juce::Rectangle<float> (radius * 2.0f, radius * 2.0f).withCentre (centre);
 
         // Printed numbered scale (0 to 10, like PLI-1A/PHATTER's dial
         // plates) drawn straight on the steel panel around the knob, before
         // the knob body itself.
-        constexpr int numTicks = 11;
-        for (int i = 0; i < numTicks; ++i)
+        if (showPrintedScale)
         {
-            const auto t = (float) i / (float) (numTicks - 1);
-            const auto tickAngle = rotaryStartAngle + t * (rotaryEndAngle - rotaryStartAngle);
-            const auto tickRadius = outerRadius * 0.92f;
-            const auto tx = centre.x + tickRadius * std::sin (tickAngle);
-            const auto ty = centre.y - tickRadius * std::cos (tickAngle);
+            constexpr int numTicks = 11;
+            for (int i = 0; i < numTicks; ++i)
+            {
+                const auto t = (float) i / (float) (numTicks - 1);
+                const auto tickAngle = rotaryStartAngle + t * (rotaryEndAngle - rotaryStartAngle);
+                const auto tickRadius = outerRadius * 0.92f;
+                const auto tx = centre.x + tickRadius * std::sin (tickAngle);
+                const auto ty = centre.y - tickRadius * std::cos (tickAngle);
 
-            const auto tickFont = juce::Font (juce::FontOptions (juce::jmax (8.0f, outerRadius * 0.16f))).boldened();
-            const auto tickArea = juce::Rectangle<float> (20.0f, 12.0f).withCentre ({ tx, ty });
-            g.setFont (tickFont);
-            g.setColour (juce::Colours::black.withAlpha (0.5f));
-            g.drawText (juce::String (i), tickArea.translated (0.0f, 1.0f), juce::Justification::centred);
-            g.setColour (scaleNumberColour);
-            g.drawText (juce::String (i), tickArea, juce::Justification::centred);
+                const auto tickFont = juce::Font (juce::FontOptions (juce::jmax (8.0f, outerRadius * 0.16f))).boldened();
+                const auto tickArea = juce::Rectangle<float> (20.0f, 12.0f).withCentre ({ tx, ty });
+                g.setFont (tickFont);
+                g.setColour (juce::Colours::black.withAlpha (0.5f));
+                g.drawText (juce::String (i), tickArea.translated (0.0f, 1.0f), juce::Justification::centred);
+                g.setColour (scaleNumberColour);
+                g.drawText (juce::String (i), tickArea, juce::Justification::centred);
+            }
         }
 
         // Drop shadow, grounding the real knob photo onto the panel.

@@ -7,58 +7,26 @@ namespace aura
 {
     namespace
     {
-        constexpr int panelMargin  = 14; // uniform edge margin, screws sit inset from here
-        constexpr int headerHeight = 92;
+        // The reference photo (Resources/UI/panel_photo.png) is a crop of a
+        // user-supplied mock-up, 704x560 source pixels, scaled up to fill
+        // this editor's window exactly (no distortion, since the window is
+        // sized to the same aspect ratio in the constructor below).
+        constexpr float photoScale = 1040.0f / 704.0f;
 
-        const juce::Colour printedText  (0xffdcd6c8);
-        const juce::Colour chromeLight  (0xfff0f0f0);
-        const juce::Colour chromeDark   (0xff666666);
-
-        // A small chrome screw head, like the ones holding a real rack
-        // panel's faceplate on - drawn once at each of the panel's four
-        // corners (not per module - a single continuous panel, matching
-        // PLI-1A/PLI-2A/PHATTER, has no per-group hardware).
-        void drawScrew (juce::Graphics& g, juce::Point<float> centre)
+        juce::Point<int> scaledPoint (float sourceX, float sourceY)
         {
-            constexpr float r = 5.0f;
-            juce::Rectangle<float> bounds (r * 2.0f, r * 2.0f);
-            bounds.setCentre (centre);
-
-            juce::ColourGradient grad (chromeLight, bounds.getX(), bounds.getY(),
-                                        chromeDark, bounds.getRight(), bounds.getBottom(), false);
-            g.setGradientFill (grad);
-            g.fillEllipse (bounds);
-            g.setColour (juce::Colours::black.withAlpha (0.4f));
-            g.drawEllipse (bounds, 0.5f);
-
-            juce::Path slot;
-            slot.addRoundedRectangle (-r * 0.7f, -0.6f, r * 1.4f, 1.2f, 0.5f);
-            g.setColour (juce::Colour (0xff2a2a2a));
-            g.fillPath (slot, juce::AffineTransform::rotation (0.5f).translated (centre.x, centre.y));
+            return { juce::roundToInt (sourceX * photoScale), juce::roundToInt (sourceY * photoScale) };
         }
 
-        // Lays a row of components out left-to-right, each given a width
-        // proportional to its weight, so panels with more knobs get more
-        // room without any manual pixel arithmetic per layout.
-        void layoutWeightedRow (juce::Rectangle<int> area,
-                                 std::initializer_list<std::pair<juce::Component*, int>> items)
+        juce::Rectangle<int> scaledRect (float x0, float y0, float x1, float y1)
         {
-            int totalWeight = 0;
-            for (auto& item : items)
-                totalWeight += item.second;
-
-            constexpr int gap = 10;
-            const int totalGaps = gap * (int) (items.size() - 1);
-            const int availableWidth = area.getWidth() - totalGaps;
-
-            int x = area.getX();
-            for (auto& item : items)
-            {
-                const int w = availableWidth * item.second / totalWeight;
-                item.first->setBounds (x, area.getY(), w, area.getHeight());
-                x += w + gap;
-            }
+            return { juce::roundToInt (x0 * photoScale), juce::roundToInt (y0 * photoScale),
+                     juce::roundToInt ((x1 - x0) * photoScale), juce::roundToInt ((y1 - y0) * photoScale) };
         }
+
+        constexpr int standardKnobDiameter = 78;
+        constexpr int bigKnobDiameter      = 120;
+        constexpr int jewelDiameter        = 20;
     }
 
     AuraAudioProcessorEditor::AuraAudioProcessorEditor (AuraAudioProcessor& processorToEdit)
@@ -66,6 +34,11 @@ namespace aura
           outputMeter ([this] { return processor.getOutputLevel(); })
     {
         setLookAndFeel (&lookAndFeel);
+
+        // The reference photo already prints its own numbered dial scale
+        // around every knob hole - drawing our own on top would double up
+        // and likely not line up with it.
+        lookAndFeel.showPrintedScale = false;
 
         instrumentBox.addItemList (getInstrumentChoices(), 1);
         addAndMakeVisible (instrumentBox);
@@ -122,9 +95,14 @@ namespace aura
         addAndMakeVisible (outputPanel);
         outputPanel.addKnob (processor.apvts, ParamIDs::outputGain, "GAIN");
 
+        for (auto* panel : { &inputPanel, &gatePanel, &compPanel, &ampPanel,
+                              &cabPanel, &eqPanel, &limiterPanel, &outputPanel })
+            panel->setExplicitLayoutMode (true);
+
         setResizable (false, false);
-        setSize (1040, 800);
-        rebuildBackgroundImage();
+        // Window aspect matches the reference photo's crop (704x560)
+        // exactly, so it fills the window with zero distortion.
+        setSize (1040, 827);
     }
 
     AuraAudioProcessorEditor::~AuraAudioProcessorEditor()
@@ -148,120 +126,83 @@ namespace aura
         });
     }
 
-    juce::Rectangle<int> AuraAudioProcessorEditor::getPanelBounds() const
-    {
-        return getLocalBounds().reduced (panelMargin);
-    }
-
-    void AuraAudioProcessorEditor::rebuildBackgroundImage()
-    {
-        backgroundImage = juce::Image (juce::Image::ARGB, getWidth(), getHeight(), true);
-        juce::Graphics g (backgroundImage);
-
-        // One continuous real photographed weathered steel panel, tiled to
-        // cover the whole window - no separate cabinet/tolex body and
-        // control-panel plate; the other Premoli Labs plug-ins are a single
-        // painted panel front to back.
-        const auto& steelTexture = UIAssets::getSteelPanel();
-        if (steelTexture.isValid())
-        {
-            g.setFillType (juce::FillType (steelTexture, juce::AffineTransform()));
-            g.fillAll();
-            g.setFillType (juce::FillType (juce::Colours::black));
-        }
-        else
-        {
-            g.setColour (juce::Colour (0xff3a4148));
-            g.fillAll();
-        }
-
-        // Subtle vignette so the tiled texture reads as one large panel
-        // rather than an obviously repeating swatch.
-        juce::ColourGradient vignette (juce::Colours::transparentBlack, getWidth() * 0.5f, getHeight() * 0.5f,
-                                        juce::Colours::black.withAlpha (0.3f), 0.0f, 0.0f, true);
-        g.setGradientFill (vignette);
-        g.fillAll();
-
-        g.setColour (juce::Colours::black.withAlpha (0.5f));
-        g.drawRect (getLocalBounds().toFloat(), 2.0f);
-
-        for (auto corner : { juce::Point<float> ((float) panelMargin + 8.0f, (float) panelMargin + 8.0f),
-                              juce::Point<float> ((float) getWidth() - panelMargin - 8.0f, (float) panelMargin + 8.0f),
-                              juce::Point<float> ((float) panelMargin + 8.0f, (float) getHeight() - panelMargin - 8.0f),
-                              juce::Point<float> ((float) getWidth() - panelMargin - 8.0f, (float) getHeight() - panelMargin - 8.0f) })
-            drawScrew (g, corner);
-    }
-
     void AuraAudioProcessorEditor::paint (juce::Graphics& g)
     {
-        // The single steel panel (with its corner screws) is already fully
-        // baked into backgroundImage by rebuildBackgroundImage() - nothing
-        // else to fill here, matching the other Premoli Labs plug-ins'
-        // one-continuous-panel construction instead of a floating inset box.
-        g.drawImageAt (backgroundImage, 0, 0);
+        // Drawn directly in the top-level editor's own paint() (not inside
+        // a child component), so a plain drawImage() is safe here - see the
+        // knob-frame comment in AuraLookAndFeel.cpp for why that
+        // distinction matters on this renderer.
+        const auto& photo = UIAssets::getPanelPhoto();
+        if (photo.isValid())
+            g.drawImage (photo, getLocalBounds().toFloat());
 
-        auto panel = getPanelBounds();
-
-        // Header: bold sans-serif wordmark (no italics/script), like PLI-1A/
-        // PLI-2A's "PREMOLI labs" print, plus a soft dark drop shadow so it
-        // reads clearly against the steel.
-        auto printLabel = [&] (const juce::String& text, juce::Rectangle<int> area, juce::Justification j)
+        // A small red power jewel over the plain metal circle already
+        // printed in the photo's nameplate strip.
+        const auto& jewelImage = UIAssets::getJewelRed();
+        if (jewelImage.isValid())
         {
-            g.setColour (juce::Colours::black.withAlpha (0.55f));
-            g.drawText (text, area.translated (0, 1), j);
-            g.setColour (printedText);
-            g.drawText (text, area, j);
-        };
-
-        g.setFont (juce::Font (juce::FontOptions (22.0f)).boldened().withExtraKerningFactor (0.06f));
-        printLabel ("PREMOLI LABS", { panel.getX() + 4, panel.getY() + 14, 260, 26 }, juce::Justification::centredLeft);
-
-        g.setFont (juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.14f));
-        printLabel ("AURA", { panel.getX() + 6, panel.getY() + 42, 220, 18 }, juce::Justification::centredLeft);
-
-        {
-            juce::Rectangle<float> jewel (26.0f, 26.0f);
-            jewel.setCentre ({ (float) panel.getX() + 232.0f, (float) panel.getY() + (float) headerHeight * 0.5f });
-
-            const auto& jewelImage = UIAssets::getJewelRed();
-            if (jewelImage.isValid())
-            {
-                const auto scale = jewel.getWidth() / (float) jewelImage.getWidth();
-                g.setFillType (juce::FillType (jewelImage, juce::AffineTransform::scale (scale)
-                                                                .translated (jewel.getX(), jewel.getY())));
-                g.fillEllipse (jewel);
-                g.setFillType (juce::FillType (juce::Colours::black));
-            }
+            auto jewel = juce::Rectangle<float> (22.0f, 22.0f).withCentre (scaledPoint (170.0f, 37.0f).toFloat());
+            const auto scale = jewel.getWidth() / (float) jewelImage.getWidth();
+            g.setFillType (juce::FillType (jewelImage, juce::AffineTransform::scale (scale)
+                                                            .translated (jewel.getX(), jewel.getY())));
+            g.fillEllipse (jewel);
+            g.setFillType (juce::FillType (juce::Colours::black));
         }
-
-        g.setFont (juce::Font (juce::FontOptions (10.0f)).boldened().withExtraKerningFactor (0.05f));
-        printLabel ("INSTRUMENT", instrumentBox.getBounds().translated (0, -16).withHeight (14),
-                    juce::Justification::centred);
-        printLabel ("OUTPUT LEVEL", outputMeter.getBounds().translated (0, -16).withHeight (14),
-                    juce::Justification::centred);
     }
 
     void AuraAudioProcessorEditor::resized()
     {
-        auto panel = getPanelBounds();
-        auto header = panel.removeFromTop (headerHeight);
+        // Every position below is measured directly off Resources/UI/
+        // panel_photo.png (in its own 704x560 source pixels, via
+        // scaledPoint()/scaledRect()) so each real control lands exactly on
+        // top of the matching knob hole / label / cutout already drawn in
+        // that photo.
 
-        instrumentBox.setBounds (header.removeFromRight (190).reduced (14, 30));
-        // Sized close to the real vu_frame.png aspect ratio (~1.68:1) so
-        // the bezel image doesn't stretch noticeably.
-        outputMeter.setBounds (header.removeFromRight (106).reduced (8, 19));
+        // Placed in the open gap between the power jewel and the
+        // instrument selector on the nameplate strip - the reference photo
+        // doesn't draw a VU meter itself, so there's no exact spot to match.
+        outputMeter.setBounds (juce::Rectangle<int> (90, 54).withCentre (scaledPoint (380.0f, 35.0f)));
+        instrumentBox.setBounds (juce::Rectangle<int> (200, 30).withCentre (scaledPoint (620.0f, 37.0f)));
 
-        auto body = panel.reduced (16, 10);
+        inputPanel.setBounds (scaledRect (0, 60, 140, 225));
+        inputPanel.layoutKnobsExplicit ({ scaledPoint (75, 145) }, standardKnobDiameter);
 
-        const int rowHeight = (body.getHeight() - 20) / 3;
-        auto row1 = body.removeFromTop (rowHeight);
-        body.removeFromTop (10);
-        auto row2 = body.removeFromTop (rowHeight);
-        body.removeFromTop (10);
-        auto row3 = body;
+        gatePanel.setBounds (scaledRect (140, 60, 355, 225));
+        gatePanel.layoutKnobsExplicit ({ scaledPoint (173, 145), scaledPoint (243, 145), scaledPoint (313, 145) },
+                                        standardKnobDiameter);
+        gatePanel.layoutBypassExplicit (scaledPoint (343, 82), jewelDiameter);
 
-        layoutWeightedRow (row1, { { &inputPanel, 2 }, { &gatePanel, 4 }, { &compPanel, 6 } });
-        layoutWeightedRow (row2, { { &ampPanel, 1 } });
-        layoutWeightedRow (row3, { { &cabPanel, 3 }, { &eqPanel, 4 }, { &limiterPanel, 3 }, { &outputPanel, 2 } });
+        compPanel.setBounds (scaledRect (355, 60, 704, 225));
+        compPanel.layoutKnobsExplicit ({ scaledPoint (393, 145), scaledPoint (456, 145), scaledPoint (518, 145),
+                                          scaledPoint (582, 145), scaledPoint (645, 145) },
+                                        standardKnobDiameter);
+        compPanel.layoutBypassExplicit (scaledPoint (693, 82), jewelDiameter);
+
+        ampPanel.setBounds (scaledRect (0, 225, 704, 375));
+        ampPanel.layoutKnobsExplicit ({ scaledPoint (78, 305), scaledPoint (187, 305), scaledPoint (296, 305),
+                                         scaledPoint (405, 305), scaledPoint (514, 305), scaledPoint (623, 305) },
+                                       standardKnobDiameter);
+        // Kept in the gap between the amp-model combo box and the knob row
+        // (the combo box renders taller than its nominal bounds, so a
+        // jewel placed just above it still ends up hidden underneath).
+        ampPanel.layoutBypassExplicit (scaledPoint (685, 258), jewelDiameter);
+        ampPanel.layoutComboExplicit (scaledRect (15, 228, 695, 248));
+
+        cabPanel.setBounds (scaledRect (0, 375, 180, 540));
+        cabPanel.layoutKnobsExplicit ({ scaledPoint (100, 450) }, standardKnobDiameter);
+        cabPanel.layoutBypassExplicit (scaledPoint (167, 392), jewelDiameter);
+        cabPanel.layoutToolbarExplicit (scaledRect (15, 392, 100, 408), scaledRect (104, 392, 175, 408));
+
+        eqPanel.setBounds (scaledRect (180, 375, 400, 540));
+        eqPanel.layoutKnobsExplicit ({ scaledPoint (224, 450), scaledPoint (294, 450), scaledPoint (362, 450) },
+                                      standardKnobDiameter);
+        eqPanel.layoutBypassExplicit (scaledPoint (388, 392), jewelDiameter);
+
+        limiterPanel.setBounds (scaledRect (400, 375, 565, 540));
+        limiterPanel.layoutKnobsExplicit ({ scaledPoint (486, 450) }, bigKnobDiameter);
+        limiterPanel.layoutBypassExplicit (scaledPoint (555, 392), jewelDiameter);
+
+        outputPanel.setBounds (scaledRect (565, 375, 704, 540));
+        outputPanel.layoutKnobsExplicit ({ scaledPoint (627, 450) }, standardKnobDiameter);
     }
 }
