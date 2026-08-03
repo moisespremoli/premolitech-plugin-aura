@@ -1,5 +1,6 @@
 #include "JCM800Model.h"
 #include "AmpFactory.h"
+#include "AmpModelRegistry.h"
 
 namespace aura
 {
@@ -93,4 +94,6 @@ namespace aura
     }
 
     static AmpModelRegistrar<JCM800Model> registrar ("JCM800");
+
+    void forceLinkJCM800Model() {}
 }

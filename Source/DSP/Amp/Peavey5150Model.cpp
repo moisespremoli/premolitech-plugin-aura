@@ -1,5 +1,6 @@
 #include "Peavey5150Model.h"
 #include "AmpFactory.h"
+#include "AmpModelRegistry.h"
 
 namespace aura
 {
@@ -90,4 +91,6 @@ namespace aura
     }
 
     static AmpModelRegistrar<Peavey5150Model> registrar ("5150");
+
+    void forceLinkPeavey5150Model() {}
 }

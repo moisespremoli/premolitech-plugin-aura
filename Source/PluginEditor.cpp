@@ -4,130 +4,190 @@
 
 namespace aura
 {
-    AuraAudioProcessorEditor::AuraAudioProcessorEditor (AuraAudioProcessor& processorToEdit)
-        : AudioProcessorEditor (&processorToEdit), processor (processorToEdit)
+    namespace
     {
+        constexpr int headerHeight = 76;
+
+        // Lays a row of components out left-to-right, each given a width
+        // proportional to its weight, so panels with more knobs get more
+        // room without any manual pixel arithmetic per layout.
+        void layoutWeightedRow (juce::Rectangle<int> area,
+                                 std::initializer_list<std::pair<juce::Component*, int>> items)
+        {
+            int totalWeight = 0;
+            for (auto& item : items)
+                totalWeight += item.second;
+
+            constexpr int gap = 10;
+            const int totalGaps = gap * (int) (items.size() - 1);
+            const int availableWidth = area.getWidth() - totalGaps;
+
+            int x = area.getX();
+            for (auto& item : items)
+            {
+                const int w = availableWidth * item.second / totalWeight;
+                item.first->setBounds (x, area.getY(), w, area.getHeight());
+                x += w + gap;
+            }
+        }
+    }
+
+    AuraAudioProcessorEditor::AuraAudioProcessorEditor (AuraAudioProcessor& processorToEdit)
+        : AudioProcessorEditor (&processorToEdit), processor (processorToEdit),
+          outputMeter ([this] { return processor.getOutputLevel(); })
+    {
+        setLookAndFeel (&lookAndFeel);
+
         instrumentBox.addItemList (getInstrumentChoices(), 1);
-        content.addAndMakeVisible (instrumentBox);
+        addAndMakeVisible (instrumentBox);
         instrumentAttachment = std::make_unique<ComboAttachment> (
             processor.apvts, ParamIDs::instrument, instrumentBox);
 
+        addAndMakeVisible (outputMeter);
+
+        addAndMakeVisible (inputPanel);
+        inputPanel.addKnob (processor.apvts, ParamIDs::inputGain, "GAIN");
+
+        addAndMakeVisible (gatePanel);
+        gatePanel.addBypassToggle (processor.apvts, ParamIDs::gateBypass);
+        gatePanel.addKnob (processor.apvts, ParamIDs::gateThreshold, "THRESH");
+        gatePanel.addKnob (processor.apvts, ParamIDs::gateAttack, "ATTACK");
+        gatePanel.addKnob (processor.apvts, ParamIDs::gateRelease, "RELEASE");
+
+        addAndMakeVisible (compPanel);
+        compPanel.addBypassToggle (processor.apvts, ParamIDs::compBypass);
+        compPanel.addKnob (processor.apvts, ParamIDs::compThreshold, "THRESH");
+        compPanel.addKnob (processor.apvts, ParamIDs::compRatio, "RATIO");
+        compPanel.addKnob (processor.apvts, ParamIDs::compAttack, "ATTACK");
+        compPanel.addKnob (processor.apvts, ParamIDs::compRelease, "RELEASE");
+        compPanel.addKnob (processor.apvts, ParamIDs::compMakeup, "MAKEUP");
+
+        addAndMakeVisible (ampPanel);
+        ampPanel.addBypassToggle (processor.apvts, ParamIDs::ampBypass);
         if (auto* ampModelParam = dynamic_cast<juce::AudioParameterChoice*> (
                 processor.apvts.getParameter (ParamIDs::ampModel)))
-            ampModelBox.addItemList (ampModelParam->choices, 1);
-        content.addAndMakeVisible (ampModelBox);
-        ampModelAttachment = std::make_unique<ComboAttachment> (
-            processor.apvts, ParamIDs::ampModel, ampModelBox);
+            ampPanel.addComboBox (processor.apvts, ParamIDs::ampModel, ampModelParam->choices);
+        ampPanel.addKnob (processor.apvts, ParamIDs::ampGain, "GAIN");
+        ampPanel.addKnob (processor.apvts, ParamIDs::ampBass, "BASS");
+        ampPanel.addKnob (processor.apvts, ParamIDs::ampMid, "MID");
+        ampPanel.addKnob (processor.apvts, ParamIDs::ampTreble, "TREBLE");
+        ampPanel.addKnob (processor.apvts, ParamIDs::ampPresence, "PRESENCE");
+        ampPanel.addKnob (processor.apvts, ParamIDs::ampMaster, "MASTER");
 
-        addToggleRow (ParamIDs::gateBypass, "Gate Bypass");
-        addSliderRow (ParamIDs::gateThreshold, "Gate Threshold");
-        addSliderRow (ParamIDs::gateAttack, "Gate Attack");
-        addSliderRow (ParamIDs::gateRelease, "Gate Release");
+        addAndMakeVisible (cabPanel);
+        cabPanel.addBypassToggle (processor.apvts, ParamIDs::cabBypass);
+        cabPanel.addKnob (processor.apvts, ParamIDs::cabMix, "MIX");
 
-        addToggleRow (ParamIDs::compBypass, "Comp Bypass");
-        addSliderRow (ParamIDs::compThreshold, "Comp Threshold");
-        addSliderRow (ParamIDs::compRatio, "Comp Ratio");
-        addSliderRow (ParamIDs::compAttack, "Comp Attack");
-        addSliderRow (ParamIDs::compRelease, "Comp Release");
-        addSliderRow (ParamIDs::compMakeup, "Comp Makeup");
+        addAndMakeVisible (eqPanel);
+        eqPanel.addBypassToggle (processor.apvts, ParamIDs::eqBypass);
+        eqPanel.addKnob (processor.apvts, ParamIDs::eqLow, "LOW");
+        eqPanel.addKnob (processor.apvts, ParamIDs::eqMid, "MID");
+        eqPanel.addKnob (processor.apvts, ParamIDs::eqHigh, "HIGH");
 
-        addToggleRow (ParamIDs::ampBypass, "Amp Bypass");
-        addSliderRow (ParamIDs::ampGain, "Amp Gain");
-        addSliderRow (ParamIDs::ampBass, "Amp Bass");
-        addSliderRow (ParamIDs::ampMid, "Amp Mid");
-        addSliderRow (ParamIDs::ampTreble, "Amp Treble");
-        addSliderRow (ParamIDs::ampPresence, "Amp Presence");
-        addSliderRow (ParamIDs::ampMaster, "Amp Master");
+        addAndMakeVisible (limiterPanel);
+        limiterPanel.addBypassToggle (processor.apvts, ParamIDs::limiterBypass);
+        limiterPanel.addKnob (processor.apvts, ParamIDs::limiterCeiling, "CEILING");
 
-        addToggleRow (ParamIDs::cabBypass, "Cab Bypass");
-        addSliderRow (ParamIDs::cabMix, "Cab Mix");
+        addAndMakeVisible (outputPanel);
+        outputPanel.addKnob (processor.apvts, ParamIDs::outputGain, "GAIN");
 
-        addToggleRow (ParamIDs::eqBypass, "EQ Bypass");
-        addSliderRow (ParamIDs::eqLow, "EQ Low");
-        addSliderRow (ParamIDs::eqMid, "EQ Mid");
-        addSliderRow (ParamIDs::eqHigh, "EQ High");
-
-        addToggleRow (ParamIDs::limiterBypass, "Limiter Bypass");
-        addSliderRow (ParamIDs::limiterCeiling, "Limiter Ceiling");
-
-        addSliderRow (ParamIDs::inputGain, "Input Gain");
-        addSliderRow (ParamIDs::outputGain, "Output Gain");
-
-        viewport.setViewedComponent (&content, false);
-        viewport.setScrollBarsShown (true, false);
-        addAndMakeVisible (viewport);
-
-        setResizable (true, true);
-        setSize (420, 600);
+        setResizable (false, false);
+        setSize (1040, 700);
+        rebuildBackgroundImage();
     }
 
-    AuraAudioProcessorEditor::~AuraAudioProcessorEditor() = default;
-
-    AuraAudioProcessorEditor::Row& AuraAudioProcessorEditor::addSliderRow (
-        const juce::String& paramID, const juce::String& labelText)
+    AuraAudioProcessorEditor::~AuraAudioProcessorEditor()
     {
-        auto row = std::make_unique<Row>();
-        row->label.setText (labelText, juce::dontSendNotification);
-        row->slider.setSliderStyle (juce::Slider::LinearHorizontal);
-        row->slider.setTextBoxStyle (juce::Slider::TextBoxRight, false, 70, 20);
-        content.addAndMakeVisible (row->label);
-        content.addAndMakeVisible (row->slider);
-        row->attachment = std::make_unique<SliderAttachment> (processor.apvts, paramID, row->slider);
-        rows.push_back (std::move (row));
-        return *rows.back();
+        setLookAndFeel (nullptr);
     }
 
-    AuraAudioProcessorEditor::ToggleRow& AuraAudioProcessorEditor::addToggleRow (
-        const juce::String& paramID, const juce::String& labelText)
+    void AuraAudioProcessorEditor::rebuildBackgroundImage()
     {
-        auto toggle = std::make_unique<ToggleRow>();
-        toggle->button.setButtonText (labelText);
-        content.addAndMakeVisible (toggle->button);
-        toggle->attachment = std::make_unique<ButtonAttachment> (processor.apvts, paramID, toggle->button);
-        toggles.push_back (std::move (toggle));
-        return *toggles.back();
+        backgroundImage = juce::Image (juce::Image::ARGB, getWidth(), getHeight(), true);
+        juce::Graphics g (backgroundImage);
+
+        juce::ColourGradient baseGradient (juce::Colour (0xff2d2d31), 0.0f, 0.0f,
+                                            juce::Colour (0xff141416), 0.0f, (float) getHeight(), false);
+        g.setGradientFill (baseGradient);
+        g.fillAll();
+
+        // Brushed-metal effect: thin, low-alpha horizontal streaks with a
+        // fixed random seed, so the texture is identical on every repaint
+        // instead of shimmering.
+        juce::Random rng (12345);
+        for (int y = 0; y < getHeight(); ++y)
+        {
+            if (rng.nextFloat() < 0.35f)
+            {
+                g.setColour (juce::Colours::white.withAlpha (rng.nextFloat() * 0.02f));
+                g.drawHorizontalLine (y, 0.0f, (float) getWidth());
+            }
+        }
+
+        // Vignette so the edges read darker than the centre.
+        juce::ColourGradient vignette (juce::Colours::transparentBlack,
+                                       getWidth() * 0.5f, getHeight() * 0.5f,
+                                       juce::Colours::black.withAlpha (0.4f), 0.0f, 0.0f, true);
+        vignette.addColour (0.75, juce::Colours::transparentBlack);
+        g.setGradientFill (vignette);
+        g.fillAll();
     }
 
     void AuraAudioProcessorEditor::paint (juce::Graphics& g)
     {
-        g.fillAll (juce::Colour (0xff1a1a1e));
+        g.drawImageAt (backgroundImage, 0, 0);
+
+        g.setColour (juce::Colours::black.withAlpha (0.5f));
+        g.drawHorizontalLine (headerHeight, 0.0f, (float) getWidth());
+        g.setColour (juce::Colours::white.withAlpha (0.04f));
+        g.drawHorizontalLine (headerHeight + 1, 0.0f, (float) getWidth());
+
+        g.setColour (juce::Colour (0xff9a9aa0));
+        g.setFont (juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.25f));
+        g.drawText ("PREMOLI LABS", juce::Rectangle<int> (22, 14, 300, 20), juce::Justification::centredLeft);
+
+        g.setColour (juce::Colours::whitesmoke);
+        g.setFont (juce::Font (juce::FontOptions (30.0f)).boldened().withExtraKerningFactor (0.03f));
+        g.drawText ("AURA", juce::Rectangle<int> (20, 32, 220, 36), juce::Justification::centredLeft);
+
+        // Power jewel - lit green, like a real amp's "on" indicator.
+        juce::Rectangle<float> powerLed (170.0f, 44.0f, 10.0f, 10.0f);
+        g.setColour (juce::Colour (0xff0c0c0e));
+        g.fillEllipse (powerLed.expanded (2.0f));
+        juce::ColourGradient ledGlow (juce::Colour (0xff7ee08a), powerLed.getCentreX(), powerLed.getY(),
+                                       juce::Colour (0xff2f8f3f), powerLed.getCentreX(), powerLed.getBottom(), false);
+        g.setGradientFill (ledGlow);
+        g.fillEllipse (powerLed);
+        g.setColour (juce::Colour (0xff4caf50).withAlpha (0.30f));
+        g.fillEllipse (powerLed.expanded (3.0f));
+
+        g.setColour (juce::Colour (0xff9a9aa0));
+        g.setFont (juce::Font (juce::FontOptions (10.5f)));
+        g.drawText ("INSTRUMENT", instrumentBox.getBounds().translated (0, -16).withHeight (14),
+                     juce::Justification::centred);
+        g.drawText ("OUTPUT", outputMeter.getBounds().translated (0, -16).withHeight (14),
+                     juce::Justification::centred);
     }
 
     void AuraAudioProcessorEditor::resized()
     {
-        viewport.setBounds (getLocalBounds());
+        auto bounds = getLocalBounds();
 
-        constexpr int rowHeight = 28;
-        constexpr int padding = 8;
-        const int contentWidth = getWidth() - viewport.getScrollBarThickness() - 2 * padding;
+        auto header = bounds.removeFromTop (headerHeight);
+        instrumentBox.setBounds (header.removeFromRight (220).reduced (20, 26));
+        outputMeter.setBounds (header.removeFromRight (130).reduced (10, 18));
 
-        int y = padding;
+        bounds = bounds.reduced (10);
 
-        auto layoutCombo = [&] (juce::ComboBox& box)
-        {
-            box.setBounds (padding, y, contentWidth, rowHeight - 4);
-            y += rowHeight;
-        };
-        layoutCombo (instrumentBox);
-        layoutCombo (ampModelBox);
+        const int rowHeight = (bounds.getHeight() - 20) / 3;
+        auto row1 = bounds.removeFromTop (rowHeight);
+        bounds.removeFromTop (10);
+        auto row2 = bounds.removeFromTop (rowHeight);
+        bounds.removeFromTop (10);
+        auto row3 = bounds;
 
-        // Placeholder GUI: bypass toggles first, then every slider. Signal
-        // chain ordering isn't meaningful here - Fase 6 replaces this whole
-        // layout with the real modular chain view.
-        for (auto& t : toggles)
-        {
-            t->button.setBounds (padding, y, contentWidth, rowHeight - 4);
-            y += rowHeight;
-        }
-
-        constexpr int labelWidth = 110;
-        for (auto& r : rows)
-        {
-            r->label.setBounds (padding, y, labelWidth, rowHeight - 4);
-            r->slider.setBounds (padding + labelWidth, y, contentWidth - labelWidth, rowHeight - 4);
-            y += rowHeight;
-        }
-
-        content.setSize (contentWidth + 2 * padding, y + padding);
+        layoutWeightedRow (row1, { { &inputPanel, 2 }, { &gatePanel, 4 }, { &compPanel, 6 } });
+        layoutWeightedRow (row2, { { &ampPanel, 1 } });
+        layoutWeightedRow (row3, { { &cabPanel, 3 }, { &eqPanel, 4 }, { &limiterPanel, 3 }, { &outputPanel, 2 } });
     }
 }

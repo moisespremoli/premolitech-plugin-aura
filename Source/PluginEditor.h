@@ -2,14 +2,17 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "PluginProcessor.h"
+#include "GUI/AuraLookAndFeel.h"
+#include "GUI/ModulePanel.h"
+#include "GUI/VUMeterComponent.h"
 
 namespace aura
 {
-    // Minimal functional editor - a flat list of sliders/toggles/combo boxes
-    // bound to every APVTS parameter via attachments. This is explicitly a
-    // Fase 6 placeholder: it exists so the plugin is testable end to end
-    // before the real custom-graphics UI (metallic panels, animated meters,
-    // modular drag & drop chain view, instrument-aware layouts) is built.
+    // Full hand-drawn amp-panel GUI: a branded header (logo, instrument
+    // selector, live output meter) over a row of module panels that mirror
+    // the real signal chain (Gate -> Comp -> Amp -> Cab -> EQ -> Limiter),
+    // each drawn as an inset metal frame with rotary knobs and a bypass LED.
+    // Everything is procedural juce::Graphics drawing - no image assets.
     class AuraAudioProcessorEditor : public juce::AudioProcessorEditor
     {
     public:
@@ -20,39 +23,27 @@ namespace aura
         void resized() override;
 
     private:
-        using SliderAttachment  = juce::AudioProcessorValueTreeState::SliderAttachment;
-        using ButtonAttachment  = juce::AudioProcessorValueTreeState::ButtonAttachment;
-        using ComboAttachment   = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
+        using ComboAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
 
         AuraAudioProcessor& processor;
+        AuraLookAndFeel lookAndFeel;
 
-        struct Row
-        {
-            juce::Label label;
-            juce::Slider slider;
-            std::unique_ptr<SliderAttachment> attachment;
-        };
-
-        struct ToggleRow
-        {
-            juce::ToggleButton button;
-            std::unique_ptr<ButtonAttachment> attachment;
-        };
+        juce::Image backgroundImage;
+        void rebuildBackgroundImage();
 
         juce::ComboBox instrumentBox;
         std::unique_ptr<ComboAttachment> instrumentAttachment;
 
-        juce::ComboBox ampModelBox;
-        std::unique_ptr<ComboAttachment> ampModelAttachment;
+        VUMeterComponent outputMeter;
 
-        std::vector<std::unique_ptr<Row>> rows;
-        std::vector<std::unique_ptr<ToggleRow>> toggles;
-
-        juce::Viewport viewport;
-        juce::Component content;
-
-        Row& addSliderRow (const juce::String& paramID, const juce::String& labelText);
-        ToggleRow& addToggleRow (const juce::String& paramID, const juce::String& labelText);
+        ModulePanel inputPanel   { "INPUT" };
+        ModulePanel gatePanel    { "NOISE GATE" };
+        ModulePanel compPanel    { "COMPRESSOR" };
+        ModulePanel ampPanel     { "AMPLIFIER" };
+        ModulePanel cabPanel     { "CABINET" };
+        ModulePanel eqPanel      { "EQUALIZER" };
+        ModulePanel limiterPanel { "LIMITER" };
+        ModulePanel outputPanel  { "OUTPUT" };
 
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (AuraAudioProcessorEditor)
     };

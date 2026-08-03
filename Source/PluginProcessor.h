@@ -40,11 +40,17 @@ namespace aura
 
         juce::AudioProcessorValueTreeState apvts;
 
+        // Post-output-gain peak level, updated every block. Read by the
+        // editor's VU meter component - genuinely driven by the audio, not
+        // decorative.
+        float getOutputLevel() const { return outputLevel.load (std::memory_order_relaxed); }
+
     private:
         static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
         void doProcessBlock (juce::AudioBuffer<double>& buffer);
 
         SignalChain signalChain;
+        std::atomic<float> outputLevel { 0.0f };
 
         // processBlock(float) bridges through this when the host (or the
         // Standalone wrapper) hasn't opted into double-precision processing.

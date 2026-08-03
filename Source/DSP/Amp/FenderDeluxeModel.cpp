@@ -1,5 +1,6 @@
 #include "FenderDeluxeModel.h"
 #include "AmpFactory.h"
+#include "AmpModelRegistry.h"
 
 namespace aura
 {
@@ -89,4 +90,6 @@ namespace aura
     }
 
     static AmpModelRegistrar<FenderDeluxeModel> registrar ("Fender Deluxe");
+
+    void forceLinkFenderDeluxeModel() {}
 }

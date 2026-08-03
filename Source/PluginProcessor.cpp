@@ -8,6 +8,7 @@
 #include "DSP/Modules/EQModule.h"
 #include "DSP/Modules/LimiterModule.h"
 #include "DSP/Amp/AmpFactory.h"
+#include "DSP/Amp/AmpModelRegistry.h"
 
 namespace aura
 {
@@ -31,6 +32,10 @@ namespace aura
 
     juce::AudioProcessorValueTreeState::ParameterLayout AuraAudioProcessor::createParameterLayout()
     {
+        // Must run before AmpFactory is queried below - see AmpModelRegistry.h
+        // for why the linker needs this explicit nudge.
+        forceLinkAllAmpModels();
+
         std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
 
         params.push_back (std::make_unique<juce::AudioParameterChoice> (
@@ -163,6 +168,15 @@ namespace aura
         signalChain.process (context);
 
         buffer.applyGain (juce::Decibels::decibelsToGain ((double) outputDb));
+
+        double peak = 0.0;
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        {
+            auto* data = buffer.getReadPointer (ch);
+            for (int i = 0; i < buffer.getNumSamples(); ++i)
+                peak = juce::jmax (peak, std::abs (data[i]));
+        }
+        outputLevel.store ((float) peak, std::memory_order_relaxed);
     }
 
     void AuraAudioProcessor::processBlock (juce::AudioBuffer<double>& buffer, juce::MidiBuffer&)

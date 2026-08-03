@@ -39,7 +39,10 @@ target_sources(AURA PRIVATE
     Source/DSP/Amp/JCM800Model.cpp
     Source/DSP/Amp/FenderDeluxeModel.cpp
     Source/DSP/Amp/Peavey5150Model.cpp
-    Source/DSP/Cab/CabModule.cpp)
+    Source/DSP/Cab/CabModule.cpp
+    Source/GUI/AuraLookAndFeel.cpp
+    Source/GUI/ModulePanel.cpp
+    Source/GUI/VUMeterComponent.cpp)
 
 target_include_directories(AURA PRIVATE Source)
 
