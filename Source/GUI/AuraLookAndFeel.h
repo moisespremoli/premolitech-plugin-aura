@@ -4,10 +4,14 @@
 
 namespace aura
 {
-    // Hand-drawn "hardware amp" look, entirely procedural (gradients/paths -
-    // no bitmaps): chrome-bezel rotary knobs with an LED-style value arc,
-    // illuminated round LED toggles for module bypass, and dark brushed-metal
-    // combo boxes. Applied globally to the editor via setLookAndFeel().
+    // Hand-drawn "vintage tube amp" look, entirely procedural (gradients/
+    // paths/text - no bitmaps): black chicken-head knobs on a printed
+    // numbered scale (1-11), jewel-style LED toggles for module bypass, and
+    // ivory/cream combo boxes with a thin chrome bezel. Applied globally to
+    // the editor via setLookAndFeel(). Colour choices deliberately evoke
+    // "vintage American tube amp" in general (cream panel, black covering,
+    // chrome corners) rather than any single manufacturer's specific trade
+    // dress or logo.
     class AuraLookAndFeel : public juce::LookAndFeel_V4
     {
     public:

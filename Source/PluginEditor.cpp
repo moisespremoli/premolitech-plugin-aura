@@ -6,7 +6,17 @@ namespace aura
 {
     namespace
     {
-        constexpr int headerHeight = 76;
+        constexpr int tolexMargin    = 18;
+        constexpr int handleClearance = 34; // top gap left for the leather handle arch
+        constexpr int grilleHeight   = 46;
+        constexpr int headerHeight   = 92;
+
+        const juce::Colour creamTop     (0xfffdfbf7);
+        const juce::Colour creamBottom  (0xffe6dbc4);
+        const juce::Colour inkBrown     (0xff443322);
+        const juce::Colour tanBorder    (0xff8a7a60);
+        const juce::Colour chromeLight  (0xfff0f0f0);
+        const juce::Colour chromeDark   (0xff666666);
 
         // Lays a row of components out left-to-right, each given a width
         // proportional to its weight, so panels with more knobs get more
@@ -94,7 +104,7 @@ namespace aura
         outputPanel.addKnob (processor.apvts, ParamIDs::outputGain, "GAIN");
 
         setResizable (false, false);
-        setSize (1040, 700);
+        setSize (1040, 800);
         rebuildBackgroundImage();
     }
 
@@ -119,90 +129,194 @@ namespace aura
         });
     }
 
+    juce::Rectangle<int> AuraAudioProcessorEditor::getPanelBounds() const
+    {
+        return { tolexMargin, handleClearance,
+                 getWidth() - 2 * tolexMargin,
+                 getHeight() - handleClearance - grilleHeight - tolexMargin - 8 };
+    }
+
+    juce::Rectangle<int> AuraAudioProcessorEditor::getGrilleBounds() const
+    {
+        auto panel = getPanelBounds();
+        return { panel.getX(), panel.getBottom() + 8, panel.getWidth(), grilleHeight };
+    }
+
     void AuraAudioProcessorEditor::rebuildBackgroundImage()
     {
         backgroundImage = juce::Image (juce::Image::ARGB, getWidth(), getHeight(), true);
         juce::Graphics g (backgroundImage);
 
-        juce::ColourGradient baseGradient (juce::Colour (0xff2d2d31), 0.0f, 0.0f,
-                                            juce::Colour (0xff141416), 0.0f, (float) getHeight(), false);
-        g.setGradientFill (baseGradient);
+        // Black tolex-covered cabinet body.
+        juce::ColourGradient tolexGradient (juce::Colour (0xff2a2a2a), getWidth() * 0.5f, getHeight() * 0.5f,
+                                             juce::Colour (0xff0d0d0d), 0.0f, 0.0f, true);
+        g.setGradientFill (tolexGradient);
         g.fillAll();
 
-        // Brushed-metal effect: thin, low-alpha horizontal streaks with a
-        // fixed random seed, so the texture is identical on every repaint
+        // Fine weave texture, fixed seed so it's stable across repaints
         // instead of shimmering.
-        juce::Random rng (12345);
-        for (int y = 0; y < getHeight(); ++y)
+        juce::Random rng (54321);
+        for (int y = 0; y < getHeight(); y += 2)
         {
-            if (rng.nextFloat() < 0.35f)
+            if (rng.nextFloat() < 0.5f)
             {
-                g.setColour (juce::Colours::white.withAlpha (rng.nextFloat() * 0.02f));
+                g.setColour (juce::Colours::white.withAlpha (rng.nextFloat() * 0.015f));
                 g.drawHorizontalLine (y, 0.0f, (float) getWidth());
             }
         }
 
-        // Vignette so the edges read darker than the centre.
-        juce::ColourGradient vignette (juce::Colours::transparentBlack,
-                                       getWidth() * 0.5f, getHeight() * 0.5f,
-                                       juce::Colours::black.withAlpha (0.4f), 0.0f, 0.0f, true);
-        vignette.addColour (0.75, juce::Colours::transparentBlack);
-        g.setGradientFill (vignette);
-        g.fillAll();
+        // Stitched seam just inside the outer edge.
+        {
+            juce::Path seam;
+            seam.addRoundedRectangle (10.0f, 10.0f, (float) getWidth() - 20.0f, (float) getHeight() - 20.0f, 14.0f);
+            juce::Path dashedSeam;
+            float dashLengths[] = { 4.0f, 4.0f };
+            juce::PathStrokeType (1.2f).createDashedStroke (dashedSeam, seam, dashLengths, 2);
+            g.setColour (juce::Colour (0xff554433).withAlpha (0.5f));
+            g.fillPath (dashedSeam);
+        }
+
+        // Chrome corner brackets.
+        auto drawCorner = [&] (float cx, float cy, float startAngle)
+        {
+            constexpr float size = 30.0f;
+            juce::Path corner;
+            corner.addPieSegment (cx - size, cy - size, size * 2.0f, size * 2.0f,
+                                   startAngle, startAngle + juce::MathConstants<float>::halfPi, 0.5f);
+            juce::ColourGradient grad (chromeLight, cx, cy, chromeDark, cx + size, cy + size, false);
+            g.setGradientFill (grad);
+            g.fillPath (corner);
+        };
+        drawCorner (18.0f, 18.0f, juce::MathConstants<float>::pi);
+        drawCorner ((float) getWidth() - 18.0f, 18.0f, juce::MathConstants<float>::halfPi);
+        drawCorner (18.0f, (float) getHeight() - 18.0f, juce::MathConstants<float>::pi + juce::MathConstants<float>::halfPi);
+        drawCorner ((float) getWidth() - 18.0f, (float) getHeight() - 18.0f, 0.0f);
+
+        // Leather carrying handle, arched over the top edge.
+        {
+            const float handleWidth = 180.0f;
+            const float cx = getWidth() * 0.5f;
+            juce::Path handle;
+            handle.startNewSubPath (cx - handleWidth * 0.5f, 30.0f);
+            handle.quadraticTo (cx, 2.0f, cx + handleWidth * 0.5f, 30.0f);
+            g.setColour (juce::Colour (0xff2e2119));
+            g.strokePath (handle, juce::PathStrokeType (11.0f, juce::PathStrokeType::curved,
+                                                          juce::PathStrokeType::rounded));
+            g.setColour (juce::Colour (0xff4a3627));
+            g.strokePath (handle, juce::PathStrokeType (6.0f, juce::PathStrokeType::curved,
+                                                          juce::PathStrokeType::rounded));
+
+            for (float side : { -1.0f, 1.0f })
+            {
+                juce::Rectangle<float> mount (18.0f, 12.0f);
+                mount.setCentre ({ cx + side * handleWidth * 0.5f, 30.0f });
+                juce::ColourGradient mountGrad (chromeLight, mount.getX(), mount.getY(),
+                                                 chromeDark, mount.getRight(), mount.getBottom(), false);
+                g.setGradientFill (mountGrad);
+                g.fillRoundedRectangle (mount, 2.0f);
+            }
+        }
+
+        // Sparkle grille cloth, baked into the cached background since it's
+        // static (only the VU needle above it animates).
+        {
+            auto grille = getGrilleBounds().toFloat();
+            g.setColour (juce::Colour (0xff2b261f));
+            g.fillRoundedRectangle (grille, 6.0f);
+
+            juce::Graphics::ScopedSaveState save (g);
+            g.reduceClipRegion (getGrilleBounds());
+
+            constexpr float spacing = 6.0f;
+            g.setColour (juce::Colour (0xff8c7b64).withAlpha (0.5f));
+            for (float yy = grille.getY(); yy < grille.getBottom(); yy += spacing)
+                g.drawHorizontalLine ((int) yy, grille.getX(), grille.getRight());
+            g.setColour (juce::Colour (0xff4a4033).withAlpha (0.5f));
+            for (float xx = grille.getX(); xx < grille.getRight(); xx += spacing)
+                g.drawVerticalLine ((int) xx, grille.getY(), grille.getBottom());
+
+            juce::Random sparkleRng (999);
+            g.setColour (juce::Colour (0xffd4af37).withAlpha (0.5f));
+            for (int i = 0; i < 220; ++i)
+            {
+                const auto px = grille.getX() + sparkleRng.nextFloat() * grille.getWidth();
+                const auto py = grille.getY() + sparkleRng.nextFloat() * grille.getHeight();
+                g.fillRect (juce::Rectangle<float> (1.2f, 1.2f).withCentre ({ px, py }));
+            }
+
+            g.setColour (juce::Colour (0xff0d0d0d));
+            g.drawRoundedRectangle (grille, 6.0f, 2.0f);
+        }
     }
 
     void AuraAudioProcessorEditor::paint (juce::Graphics& g)
     {
         g.drawImageAt (backgroundImage, 0, 0);
 
-        g.setColour (juce::Colours::black.withAlpha (0.5f));
-        g.drawHorizontalLine (headerHeight, 0.0f, (float) getWidth());
-        g.setColour (juce::Colours::white.withAlpha (0.04f));
-        g.drawHorizontalLine (headerHeight + 1, 0.0f, (float) getWidth());
+        auto panel = getPanelBounds();
 
-        g.setColour (juce::Colour (0xff9a9aa0));
-        g.setFont (juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.25f));
-        g.drawText ("PREMOLI LABS", juce::Rectangle<int> (22, 14, 300, 20), juce::Justification::centredLeft);
+        // Cream backplate behind every module panel - the modules' own
+        // gaps show this through, so the panel reads as one continuous
+        // ivory control plate rather than separate floating tiles.
+        juce::ColourGradient panelGradient (creamTop, 0.0f, (float) panel.getY(),
+                                             creamBottom, 0.0f, (float) panel.getBottom(), false);
+        g.setGradientFill (panelGradient);
+        g.fillRoundedRectangle (panel.toFloat(), 10.0f);
+        g.setColour (tanBorder);
+        g.drawRoundedRectangle (panel.toFloat().reduced (1.0f), 10.0f, 1.5f);
 
-        g.setColour (juce::Colours::whitesmoke);
-        g.setFont (juce::Font (juce::FontOptions (30.0f)).boldened().withExtraKerningFactor (0.03f));
-        g.drawText ("AURA", juce::Rectangle<int> (20, 32, 220, 36), juce::Justification::centredLeft);
+        // Header: brand wordmark, jewel power light.
+        g.setColour (inkBrown);
+        g.setFont (juce::Font (juce::FontOptions (15.0f)).boldened().withExtraKerningFactor (0.18f));
+        g.drawText ("PREMOLI LABS", panel.getX() + 24, panel.getY() + 16, 260, 20, juce::Justification::centredLeft);
 
-        // Power jewel - lit green, like a real amp's "on" indicator.
-        juce::Rectangle<float> powerLed (170.0f, 44.0f, 10.0f, 10.0f);
-        g.setColour (juce::Colour (0xff0c0c0e));
-        g.fillEllipse (powerLed.expanded (2.0f));
-        juce::ColourGradient ledGlow (juce::Colour (0xff7ee08a), powerLed.getCentreX(), powerLed.getY(),
-                                       juce::Colour (0xff2f8f3f), powerLed.getCentreX(), powerLed.getBottom(), false);
-        g.setGradientFill (ledGlow);
-        g.fillEllipse (powerLed);
-        g.setColour (juce::Colour (0xff4caf50).withAlpha (0.30f));
-        g.fillEllipse (powerLed.expanded (3.0f));
+        g.setFont (juce::Font (juce::FontOptions (36.0f)).italicised().boldened());
+        g.drawText ("AURA", panel.getX() + 22, panel.getY() + 34, 220, 44, juce::Justification::centredLeft);
 
-        g.setColour (juce::Colour (0xff9a9aa0));
-        g.setFont (juce::Font (juce::FontOptions (10.5f)));
+        {
+            juce::Rectangle<float> jewel (26.0f, 26.0f);
+            jewel.setCentre ({ (float) panel.getX() + 250.0f, (float) panel.getY() + (float) headerHeight * 0.5f });
+
+            juce::ColourGradient bezelGrad (chromeLight, jewel.getX(), jewel.getY(),
+                                             chromeDark, jewel.getRight(), jewel.getBottom(), false);
+            g.setGradientFill (bezelGrad);
+            g.fillEllipse (jewel.expanded (3.0f));
+
+            juce::ColourGradient jewelGrad (juce::Colour (0xffff9999), jewel.getX() + jewel.getWidth() * 0.35f,
+                                             jewel.getY() + jewel.getHeight() * 0.3f,
+                                             juce::Colour (0xff4a0000), jewel.getCentreX(), jewel.getBottom(), false);
+            g.setGradientFill (jewelGrad);
+            g.fillEllipse (jewel);
+            g.setColour (juce::Colours::white.withAlpha (0.55f));
+            g.fillEllipse (jewel.reduced (jewel.getWidth() * 0.3f)
+                               .translated (-jewel.getWidth() * 0.15f, -jewel.getHeight() * 0.18f)
+                               .withSizeKeepingCentre (jewel.getWidth() * 0.28f, jewel.getHeight() * 0.2f));
+        }
+
+        g.setColour (inkBrown.withAlpha (0.85f));
+        g.setFont (juce::Font (juce::FontOptions (10.0f)).boldened().withExtraKerningFactor (0.05f));
         g.drawText ("INSTRUMENT", instrumentBox.getBounds().translated (0, -16).withHeight (14),
                      juce::Justification::centred);
-        g.drawText ("OUTPUT", outputMeter.getBounds().translated (0, -16).withHeight (14),
+        g.drawText ("OUTPUT LEVEL", outputMeter.getBounds().translated (0, -16).withHeight (14),
                      juce::Justification::centred);
     }
 
     void AuraAudioProcessorEditor::resized()
     {
-        auto bounds = getLocalBounds();
+        auto panel = getPanelBounds();
+        auto header = panel.removeFromTop (headerHeight);
 
-        auto header = bounds.removeFromTop (headerHeight);
-        instrumentBox.setBounds (header.removeFromRight (220).reduced (20, 26));
-        outputMeter.setBounds (header.removeFromRight (130).reduced (10, 18));
+        instrumentBox.setBounds (header.removeFromRight (190).reduced (14, 30));
+        outputMeter.setBounds (header.removeFromRight (130).reduced (8, 18));
 
-        bounds = bounds.reduced (10);
+        auto body = panel.reduced (16, 10);
 
-        const int rowHeight = (bounds.getHeight() - 20) / 3;
-        auto row1 = bounds.removeFromTop (rowHeight);
-        bounds.removeFromTop (10);
-        auto row2 = bounds.removeFromTop (rowHeight);
-        bounds.removeFromTop (10);
-        auto row3 = bounds;
+        const int rowHeight = (body.getHeight() - 20) / 3;
+        auto row1 = body.removeFromTop (rowHeight);
+        body.removeFromTop (10);
+        auto row2 = body.removeFromTop (rowHeight);
+        body.removeFromTop (10);
+        auto row3 = body;
 
         layoutWeightedRow (row1, { { &inputPanel, 2 }, { &gatePanel, 4 }, { &compPanel, 6 } });
         layoutWeightedRow (row2, { { &ampPanel, 1 } });

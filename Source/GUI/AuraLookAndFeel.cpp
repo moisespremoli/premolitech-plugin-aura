@@ -2,80 +2,96 @@
 
 namespace aura
 {
+    namespace
+    {
+        const juce::Colour creamTop     (0xfffdfbf7);
+        const juce::Colour creamBottom  (0xffe6dbc4);
+        const juce::Colour chromeLight  (0xfff0f0f0);
+        const juce::Colour chromeDark   (0xff666666);
+        const juce::Colour inkBrown     (0xff443322);
+        const juce::Colour scaleNumberColour (0xff2a2018);
+    }
+
     AuraLookAndFeel::AuraLookAndFeel()
     {
-        setColour (juce::Slider::textBoxTextColourId, juce::Colours::whitesmoke);
+        setColour (juce::Slider::textBoxTextColourId, inkBrown);
         setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
-        setColour (juce::ComboBox::textColourId, juce::Colours::whitesmoke);
-        setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff5a5a60));
-        setColour (juce::PopupMenu::backgroundColourId, juce::Colour (0xff1e1e22));
-        setColour (juce::PopupMenu::textColourId, juce::Colours::whitesmoke);
-        setColour (juce::PopupMenu::highlightedBackgroundColourId, juce::Colour (0xffe8a33d));
-        setColour (juce::Label::textColourId, juce::Colours::whitesmoke);
+        setColour (juce::ComboBox::textColourId, inkBrown);
+        setColour (juce::ComboBox::outlineColourId, juce::Colour (0xff8a7a60));
+        setColour (juce::PopupMenu::backgroundColourId, creamTop);
+        setColour (juce::PopupMenu::textColourId, inkBrown);
+        setColour (juce::PopupMenu::highlightedBackgroundColourId, juce::Colour (0xffcdbb8e));
+        setColour (juce::Label::textColourId, inkBrown);
     }
 
     void AuraLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int width, int height,
                                              float sliderPos, float rotaryStartAngle, float rotaryEndAngle,
                                              juce::Slider&)
     {
-        auto bounds = juce::Rectangle<int> (x, y, width, height).toFloat().reduced (4.0f);
-        const auto radius = juce::jmin (bounds.getWidth(), bounds.getHeight()) / 2.0f;
-        const auto centre = bounds.getCentre();
+        // The slider's full allotted area is deliberately larger than the
+        // knob itself, leaving a margin for the printed numbered scale
+        // (like a real amp's panel silkscreen) to sit just inside the
+        // component's own bounds - drawing further out would get clipped.
+        auto outerBounds = juce::Rectangle<int> (x, y, width, height).toFloat().reduced (2.0f);
+        const auto outerRadius = juce::jmin (outerBounds.getWidth(), outerBounds.getHeight()) / 2.0f;
+        const auto centre = outerBounds.getCentre();
+        const auto radius = outerRadius * 0.62f;
+        const auto bounds = juce::Rectangle<float> (radius * 2.0f, radius * 2.0f).withCentre (centre);
         const auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
 
-        // Drop shadow, offset slightly down so the knob reads as raised off
-        // the panel.
-        g.setColour (juce::Colours::black.withAlpha (0.45f));
+        // Printed numbered scale (vintage "1 to 11" dial plate) drawn on the
+        // panel around the knob, before the knob body itself.
+        constexpr int numTicks = 11;
+        for (int i = 0; i < numTicks; ++i)
+        {
+            const auto t = (float) i / (float) (numTicks - 1);
+            const auto tickAngle = rotaryStartAngle + t * (rotaryEndAngle - rotaryStartAngle);
+            const auto tickRadius = outerRadius * 0.92f;
+            const auto tx = centre.x + tickRadius * std::sin (tickAngle);
+            const auto ty = centre.y - tickRadius * std::cos (tickAngle);
+
+            g.setColour (scaleNumberColour);
+            g.setFont (juce::Font (juce::FontOptions (juce::jmax (8.0f, outerRadius * 0.16f))).boldened());
+            g.drawText (juce::String (i + 1),
+                        juce::Rectangle<float> (20.0f, 12.0f).withCentre ({ tx, ty }),
+                        juce::Justification::centred);
+        }
+
+        // Drop shadow.
+        g.setColour (juce::Colours::black.withAlpha (0.35f));
         g.fillEllipse (bounds.translated (0.0f, 2.0f));
 
-        // Chrome bezel ring - a diagonal light-to-dark gradient reads as a
-        // curved metal rim under a single light source.
-        juce::ColourGradient bezelGradient (juce::Colour (0xffcfcfd4), bounds.getX(), bounds.getY(),
-                                             juce::Colour (0xff2b2b2e), bounds.getRight(), bounds.getBottom(), false);
+        // Thin chrome bezel ring.
+        juce::ColourGradient bezelGradient (chromeLight, bounds.getX(), bounds.getY(),
+                                             chromeDark, bounds.getRight(), bounds.getBottom(), false);
         g.setGradientFill (bezelGradient);
         g.fillEllipse (bounds);
 
-        // Recessed knob body.
-        auto body = bounds.reduced (radius * 0.14f);
-        juce::ColourGradient bodyGradient (juce::Colour (0xff4a4a50), body.getX() + body.getWidth() * 0.3f, body.getY(),
-                                            juce::Colour (0xff141416), body.getCentreX(), body.getBottom(), false);
+        // Black "chicken-head" knob body.
+        auto body = bounds.reduced (radius * 0.12f);
+        juce::ColourGradient bodyGradient (juce::Colour (0xff2a2a2a), body.getX() + body.getWidth() * 0.3f, body.getY(),
+                                            juce::Colour (0xff0d0d0d), body.getCentreX(), body.getBottom(), false);
         g.setGradientFill (bodyGradient);
         g.fillEllipse (body);
 
-        // Specular highlight, upper-left, to sell the glossy plastic/metal
-        // cap look.
-        auto highlight = body.reduced (radius * 0.3f).withSizeKeepingCentre (radius * 0.55f, radius * 0.4f)
-                              .translated (-radius * 0.18f, -radius * 0.3f);
-        g.setColour (juce::Colours::white.withAlpha (0.08f));
-        g.fillEllipse (highlight);
-
-        // Value arc: a dim full-range track behind a lit amber arc showing
-        // the current position, like a UAD/Neural-DSP style indicator ring.
-        const auto arcRadius = radius * 0.98f;
-        juce::Path track;
-        track.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f,
-                              rotaryStartAngle, rotaryEndAngle, true);
-        g.setColour (juce::Colour (0xff2a2a2e));
-        g.strokePath (track, juce::PathStrokeType (2.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-
-        juce::Path valueArc;
-        valueArc.addCentredArc (centre.x, centre.y, arcRadius, arcRadius, 0.0f,
-                                 rotaryStartAngle, angle, true);
-        g.setColour (juce::Colour (0xffe8a33d));
-        g.strokePath (valueArc, juce::PathStrokeType (2.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+        // Subtle ridged texture ring, evoking a moulded bakelite knob.
+        g.setColour (juce::Colours::black.withAlpha (0.5f));
+        juce::Path ridgeRing;
+        ridgeRing.addEllipse (body.reduced (radius * 0.18f));
+        g.strokePath (ridgeRing, juce::PathStrokeType (1.0f, juce::PathStrokeType::curved, juce::PathStrokeType::butt));
 
         // Pointer, rotated to the current value.
         juce::Path pointer;
-        const auto pointerLength = radius * 0.6f;
-        const auto pointerThickness = juce::jmax (2.0f, radius * 0.1f);
+        const auto pointerLength = radius * 0.62f;
+        const auto pointerThickness = juce::jmax (2.0f, radius * 0.09f);
         pointer.addRoundedRectangle (-pointerThickness * 0.5f, -pointerLength * 0.95f,
                                       pointerThickness, pointerLength, pointerThickness * 0.4f);
-        g.setColour (juce::Colours::whitesmoke.withAlpha (0.9f));
+        g.setColour (juce::Colours::white.withAlpha (0.92f));
         g.fillPath (pointer, juce::AffineTransform::rotation (angle).translated (centre.x, centre.y));
 
         // Centre cap.
-        g.setColour (juce::Colour (0xff1c1c1e));
-        g.fillEllipse (juce::Rectangle<float> (radius * 0.26f, radius * 0.26f).withCentre (centre));
+        g.setColour (juce::Colour (0xff111111));
+        g.fillEllipse (juce::Rectangle<float> (radius * 0.22f, radius * 0.22f).withCentre (centre));
     }
 
     void AuraLookAndFeel::drawToggleButton (juce::Graphics& g, juce::ToggleButton& button,
@@ -85,29 +101,27 @@ namespace aura
         const auto ledDiameter = juce::jmin (bounds.getHeight() - 2.0f, bounds.getWidth() - 2.0f);
         const auto ledBounds = juce::Rectangle<float> (ledDiameter, ledDiameter).withCentre (bounds.getCentre());
 
-        g.setColour (juce::Colour (0xff0c0c0e));
+        // Chrome bezel jewel-light housing.
+        juce::ColourGradient bezelGradient (chromeLight, ledBounds.getX(), ledBounds.getY(),
+                                             chromeDark, ledBounds.getRight(), ledBounds.getBottom(), false);
+        g.setGradientFill (bezelGradient);
         g.fillEllipse (ledBounds.expanded (2.0f));
 
         // Bypass semantics: toggled ON == bypassed == signal NOT flowing
-        // through this module, so the LED reads red when on, green when the
-        // module is actively processing - matching how a real pedal's status
-        // LED works (lit = engaged).
+        // through this module, so the jewel glows red when on, green when
+        // the module is actively processing.
         const bool bypassed = button.getToggleState();
-        const auto colour = bypassed ? juce::Colour (0xff8a2c26) : juce::Colour (0xff4caf50);
+        const auto colour = bypassed ? juce::Colour (0xffcc1111) : juce::Colour (0xff3f9142);
 
-        juce::ColourGradient glow (colour.brighter (0.7f), ledBounds.getCentreX(), ledBounds.getY(),
-                                    colour.darker (0.5f), ledBounds.getCentreX(), ledBounds.getBottom(), false);
+        juce::ColourGradient glow (colour.brighter (0.7f), ledBounds.getX() + ledBounds.getWidth() * 0.35f,
+                                    ledBounds.getY() + ledBounds.getHeight() * 0.35f,
+                                    colour.darker (0.6f), ledBounds.getCentreX(), ledBounds.getBottom(), false);
         g.setGradientFill (glow);
-        g.fillEllipse (ledBounds);
+        g.fillEllipse (ledBounds.reduced (1.5f));
 
-        if (! bypassed)
-        {
-            g.setColour (colour.withAlpha (0.30f));
-            g.fillEllipse (ledBounds.expanded (3.0f));
-        }
-
-        g.setColour (juce::Colours::white.withAlpha (0.35f));
-        g.drawEllipse (ledBounds.reduced (1.0f), 1.0f);
+        g.setColour (juce::Colours::white.withAlpha (0.5f));
+        g.fillEllipse (ledBounds.reduced (ledDiameter * 0.28f).translated (-ledDiameter * 0.12f, -ledDiameter * 0.12f)
+                           .withSizeKeepingCentre (ledDiameter * 0.28f, ledDiameter * 0.2f));
     }
 
     void AuraLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, bool /*isButtonDown*/,
@@ -116,11 +130,10 @@ namespace aura
     {
         auto bounds = juce::Rectangle<float> (0.0f, 0.0f, (float) width, (float) height).reduced (1.0f);
 
-        juce::ColourGradient bodyGradient (juce::Colour (0xff3d3d42), 0.0f, 0.0f,
-                                            juce::Colour (0xff17171a), 0.0f, (float) height, false);
+        juce::ColourGradient bodyGradient (creamTop, 0.0f, 0.0f, creamBottom, 0.0f, (float) height, false);
         g.setGradientFill (bodyGradient);
         g.fillRoundedRectangle (bounds, 4.0f);
-        g.setColour (juce::Colour (0xff5a5a60));
+        g.setColour (juce::Colour (0xff8a7a60));
         g.drawRoundedRectangle (bounds, 4.0f, 1.0f);
 
         juce::Path arrow;
@@ -129,13 +142,13 @@ namespace aura
         arrow.addTriangle (arrowZone.getX(), arrowZone.getY(),
                            arrowZone.getRight(), arrowZone.getY(),
                            arrowZone.getCentreX(), arrowZone.getBottom());
-        g.setColour (juce::Colour (0xffe8a33d));
+        g.setColour (inkBrown);
         g.fillPath (arrow);
     }
 
     juce::Font AuraLookAndFeel::getComboBoxFont (juce::ComboBox&)
     {
-        return juce::Font (juce::FontOptions (14.0f)).withExtraKerningFactor (0.02f);
+        return juce::Font (juce::FontOptions (14.0f)).boldened().withExtraKerningFactor (0.02f);
     }
 
     juce::Font AuraLookAndFeel::getLabelFont (juce::Label&)

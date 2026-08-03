@@ -2,6 +2,38 @@
 
 namespace aura
 {
+    namespace
+    {
+        const juce::Colour creamTop     (0xfffdfbf7);
+        const juce::Colour creamBottom  (0xffe6dbc4);
+        const juce::Colour tanBorder    (0xff8a7a60);
+        const juce::Colour inkBrown     (0xff443322);
+        const juce::Colour chromeLight  (0xfff0f0f0);
+        const juce::Colour chromeDark   (0xff666666);
+
+        // A small chrome screw head, like the ones holding a real amp's
+        // control-panel faceplate on - purely decorative, drawn at each
+        // panel's four corners.
+        void drawScrew (juce::Graphics& g, juce::Point<float> centre)
+        {
+            constexpr float r = 5.0f;
+            juce::Rectangle<float> bounds (r * 2.0f, r * 2.0f);
+            bounds.setCentre (centre);
+
+            juce::ColourGradient grad (chromeLight, bounds.getX(), bounds.getY(),
+                                        chromeDark, bounds.getRight(), bounds.getBottom(), false);
+            g.setGradientFill (grad);
+            g.fillEllipse (bounds);
+            g.setColour (juce::Colours::black.withAlpha (0.4f));
+            g.drawEllipse (bounds, 0.5f);
+
+            juce::Path slot;
+            slot.addRoundedRectangle (-r * 0.7f, -0.6f, r * 1.4f, 1.2f, 0.5f);
+            g.setColour (juce::Colour (0xff2a2a2a));
+            g.fillPath (slot, juce::AffineTransform::rotation (0.5f).translated (centre.x, centre.y));
+        }
+    }
+
     ModulePanel::ModulePanel (juce::String titleText) : title (std::move (titleText))
     {
         bypassButton.setVisible (false);
@@ -19,8 +51,8 @@ namespace aura
         knob->slider.setPopupDisplayEnabled (true, true, this);
         knob->caption.setText (captionText, juce::dontSendNotification);
         knob->caption.setJustificationType (juce::Justification::centred);
-        knob->caption.setFont (juce::Font (juce::FontOptions (11.0f)));
-        knob->caption.setColour (juce::Label::textColourId, juce::Colours::whitesmoke.withAlpha (0.8f));
+        knob->caption.setFont (juce::Font (juce::FontOptions (11.0f)).boldened());
+        knob->caption.setColour (juce::Label::textColourId, inkBrown);
 
         addAndMakeVisible (knob->slider);
         addAndMakeVisible (knob->caption);
@@ -65,14 +97,15 @@ namespace aura
         toolbarButton.setButtonText (buttonText);
         toolbarButton.setVisible (true);
         toolbarButton.onClick = std::move (onClick);
-        toolbarButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xff3d3d42));
-        toolbarButton.setColour (juce::TextButton::textColourOffId, juce::Colours::whitesmoke);
+        toolbarButton.setColour (juce::TextButton::buttonColourId, creamBottom);
+        toolbarButton.setColour (juce::TextButton::textColourOffId, inkBrown);
         addAndMakeVisible (toolbarButton);
 
         statusLabel.setVisible (true);
         statusLabel.setJustificationType (juce::Justification::centredLeft);
-        statusLabel.setFont (juce::Font (juce::FontOptions (11.5f)));
-        statusLabel.setColour (juce::Label::textColourId, juce::Colours::whitesmoke.withAlpha (0.7f));
+        statusLabel.setFont (juce::Font (juce::FontOptions (10.0f)));
+        statusLabel.setColour (juce::Label::textColourId, inkBrown.withAlpha (0.75f));
+        statusLabel.setMinimumHorizontalScale (0.7f);
         addAndMakeVisible (statusLabel);
 
         return toolbarButton;
@@ -87,30 +120,29 @@ namespace aura
     {
         auto bounds = getLocalBounds().toFloat();
 
-        juce::ColourGradient panelGradient (juce::Colour (0xff333338), 0.0f, 0.0f,
-                                             juce::Colour (0xff1c1c1f), 0.0f, bounds.getHeight(), false);
+        juce::ColourGradient panelGradient (creamTop, 0.0f, 0.0f, creamBottom, 0.0f, bounds.getHeight(), false);
         g.setGradientFill (panelGradient);
         g.fillRoundedRectangle (bounds, 6.0f);
 
-        g.setColour (juce::Colours::white.withAlpha (0.06f));
-        g.drawRoundedRectangle (bounds.reduced (1.0f), 6.0f, 1.0f);
-        g.setColour (juce::Colours::black.withAlpha (0.6f));
-        g.drawRoundedRectangle (bounds, 6.0f, 1.0f);
+        g.setColour (tanBorder.withAlpha (0.6f));
+        g.drawRoundedRectangle (bounds.reduced (1.0f), 6.0f, 1.5f);
 
-        // Engraved title: a dark offset copy under a light one reads as
-        // stamped/etched metal rather than flat printed text.
-        auto titleArea = juce::Rectangle<int> (10, 4, getWidth() - 20, 18);
-        g.setFont (juce::Font (juce::FontOptions (12.5f)).withExtraKerningFactor (0.08f).boldened());
-        g.setColour (juce::Colours::black.withAlpha (0.6f));
-        g.drawText (title, titleArea.translated (0, 1), juce::Justification::centredLeft);
-        g.setColour (juce::Colour (0xffb8b8be));
+        for (auto corner : { juce::Point<float> (14.0f, 14.0f),
+                              juce::Point<float> (bounds.getWidth() - 14.0f, 14.0f),
+                              juce::Point<float> (14.0f, bounds.getHeight() - 14.0f),
+                              juce::Point<float> (bounds.getWidth() - 14.0f, bounds.getHeight() - 14.0f) })
+            drawScrew (g, corner);
+
+        auto titleArea = juce::Rectangle<int> (24, 4, getWidth() - 44, 18);
+        g.setFont (juce::Font (juce::FontOptions (12.5f)).withExtraKerningFactor (0.1f).boldened());
+        g.setColour (inkBrown);
         g.drawText (title, titleArea, juce::Justification::centredLeft);
     }
 
     void ModulePanel::resized()
     {
-        auto bounds = getLocalBounds().reduced (8);
-        bounds.removeFromTop (18); // space consumed by the engraved title in paint()
+        auto bounds = getLocalBounds().reduced (20, 8);
+        bounds.removeFromTop (14); // space consumed by the title in paint()
 
         auto headerRow = bounds.removeFromTop ((hasCombo || hasToolbar) ? 24 : 0);
         if (hasCombo)
@@ -119,15 +151,15 @@ namespace aura
         }
         else if (hasToolbar)
         {
-            toolbarButton.setBounds (headerRow.removeFromLeft (100));
-            headerRow.removeFromLeft (8);
+            toolbarButton.setBounds (headerRow.removeFromLeft (78));
+            headerRow.removeFromLeft (6);
             statusLabel.setBounds (headerRow);
         }
 
         if (hasBypass)
         {
             constexpr int ledSize = 16;
-            bypassButton.setBounds (getWidth() - ledSize - 8, 6, ledSize, ledSize);
+            bypassButton.setBounds (getWidth() - ledSize - 22, 6, ledSize, ledSize);
         }
 
         if (! knobs.empty())
@@ -137,7 +169,7 @@ namespace aura
             {
                 auto cell = bounds.removeFromLeft (knobAreaWidth);
                 auto captionArea = cell.removeFromBottom (14);
-                const auto knobSize = juce::jmin (cell.getWidth(), cell.getHeight()) - 4;
+                const auto knobSize = juce::jmin (cell.getWidth(), cell.getHeight());
                 k->slider.setBounds (cell.withSizeKeepingCentre (knobSize, knobSize));
                 k->caption.setBounds (captionArea);
             }

@@ -36,7 +36,7 @@ namespace aura
         juce::String getIRDisplayName() const { return currentIRName; }
 
     private:
-        juce::String currentIRName { "Cabinet Placeholder (built-in)" };
+        juce::String currentIRName { "Built-in Placeholder" };
         // juce::dsp::Convolution is float-only internally (its FFT engine
         // doesn't have a double-precision path), while the rest of the
         // chain runs in double. This module is the bridge: it converts to

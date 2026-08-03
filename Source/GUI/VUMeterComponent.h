@@ -6,9 +6,10 @@
 
 namespace aura
 {
-    // A real-time LED-ladder output meter (green/amber/red segments, with
-    // peak hold) - polls a level provider on a Timer, so what it shows is
-    // genuinely the plugin's live output level, not a decorative animation.
+    // A real-time analogue-style VU meter (chrome frame, cream face, printed
+    // dB scale, swinging needle) - polls a level provider on a Timer, so the
+    // needle position genuinely reflects the plugin's live output level
+    // rather than a decorative animation.
     class VUMeterComponent : public juce::Component, private juce::Timer
     {
     public:
@@ -21,7 +22,6 @@ namespace aura
 
         std::function<float()> levelProvider;
         float displayLevel = 0.0f;
-        float peakHold = 0.0f;
-        int peakHoldCounter = 0;
+        float needleAngle = 0.0f;
     };
 }
