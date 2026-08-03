@@ -1,0 +1,135 @@
+name: Build Premoli Labs AURA
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ "v*.*.*" ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão a publicar como release (ex.: 0.1.0) — deixe em branco para só compilar, sem publicar release'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows (VST3)
+            os: windows-latest
+            artifact: PremoliLabs-AURA-Windows
+          - name: macOS (VST3 + AU)
+            os: macos-latest
+            artifact: PremoliLabs-AURA-macOS
+          - name: Linux (VST3)
+            os: ubuntu-latest
+            artifact: PremoliLabs-AURA-Linux
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev libx11-dev libxext-dev libxrandr-dev \
+            libxinerama-dev libxcursor-dev libfreetype-dev libfontconfig1-dev \
+            libcurl4-openssl-dev
+
+      - name: Configure
+        run: >
+          cmake -B build -S .
+          -DCMAKE_BUILD_TYPE=Release
+          -DJUCE_COPY_PLUGIN_AFTER_BUILD=OFF
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Collect artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist | Out-Null
+          Copy-Item -Recurse "build/AURA_artefacts/Release/VST3/*" dist/
+          Copy-Item -Recurse "build/AURA_artefacts/Release/Standalone/*" dist/
+          Compress-Archive -Path dist/* -DestinationPath "${{ matrix.artifact }}.zip"
+
+      - name: Collect artifacts (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p dist
+          cp -R "build/AURA_artefacts/Release/VST3/"* dist/
+          cp -R "build/AURA_artefacts/Release/Standalone/"* dist/
+          cd dist && zip -ry "../${{ matrix.artifact }}.zip" .
+
+      # Instalador .pkg nativo do macOS: duplo clique, o Instalador do
+      # sistema copia o VST3/AU/app para as pastas certas. Sem Terminal.
+      - name: Build macOS installer (.pkg)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p pkgroot/Library/Audio/Plug-Ins/VST3
+          mkdir -p pkgroot/Library/Audio/Plug-Ins/Components
+          mkdir -p pkgroot/Applications
+          cp -R "build/AURA_artefacts/Release/VST3/Premoli Labs AURA.vst3" pkgroot/Library/Audio/Plug-Ins/VST3/
+          cp -R "build/AURA_artefacts/Release/AU/Premoli Labs AURA.component" pkgroot/Library/Audio/Plug-Ins/Components/
+          cp -R "build/AURA_artefacts/Release/Standalone/Premoli Labs AURA.app" pkgroot/Applications/
+          pkgbuild --root pkgroot \
+            --identifier com.premolilabs.aura.installer \
+            --version 1.0 \
+            --install-location / \
+            "${{ matrix.artifact }}-Installer.pkg"
+
+      - name: Upload (Windows/Linux)
+        if: runner.os != 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.zip
+
+      - name: Upload (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}-Installer.pkg
+
+  release:
+    needs: [build]
+    permissions:
+      contents: write
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.version != '')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # No push de tag, github.ref já é a tag. No disparo manual, montamos
+      # a tag "vX.Y.Z" a partir do input de versão.
+      - name: Determine tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=v${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            artifacts/PremoliLabs-AURA-Windows/PremoliLabs-AURA-Windows.zip
+            artifacts/PremoliLabs-AURA-macOS/PremoliLabs-AURA-macOS-Installer.pkg
+            artifacts/PremoliLabs-AURA-Linux/PremoliLabs-AURA-Linux.zip
