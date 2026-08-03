@@ -37,6 +37,8 @@ target_sources(AURA PRIVATE
     Source/DSP/Modules/LimiterModule.cpp
     Source/DSP/Amp/AmpModule.cpp
     Source/DSP/Amp/JCM800Model.cpp
+    Source/DSP/Amp/FenderDeluxeModel.cpp
+    Source/DSP/Amp/Peavey5150Model.cpp
     Source/DSP/Cab/CabModule.cpp)
 
 target_include_directories(AURA PRIVATE Source)
