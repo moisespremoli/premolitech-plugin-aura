@@ -109,9 +109,15 @@ namespace aura::UIAssets
         return loadOnce (image, BinaryData::grille_png, BinaryData::grille_pngSize);
     }
 
-    const juce::Image& getCreamPanel()
+    const juce::Image& getSteelPanel()
     {
         static juce::Image image;
-        return loadOnce (image, BinaryData::cream_panel_png, BinaryData::cream_panel_pngSize);
+        return loadOnce (image, BinaryData::steel_panel_png, BinaryData::steel_panel_pngSize);
+    }
+
+    const juce::Image& getTolexPanel()
+    {
+        static juce::Image image;
+        return loadOnce (image, BinaryData::tolex_panel_png, BinaryData::tolex_panel_pngSize);
     }
 }

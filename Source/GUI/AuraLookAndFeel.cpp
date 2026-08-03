@@ -8,7 +8,7 @@ namespace aura
         const juce::Colour creamTop     (0xfffdfbf7);
         const juce::Colour creamBottom  (0xffe6dbc4);
         const juce::Colour inkBrown     (0xff443322);
-        const juce::Colour scaleNumberColour (0xff2a2018);
+        const juce::Colour scaleNumberColour (0xffe9dfc4);
     }
 
     AuraLookAndFeel::AuraLookAndFeel()
@@ -48,11 +48,13 @@ namespace aura
             const auto tx = centre.x + tickRadius * std::sin (tickAngle);
             const auto ty = centre.y - tickRadius * std::cos (tickAngle);
 
+            const auto tickFont = juce::Font (juce::FontOptions (juce::jmax (8.0f, outerRadius * 0.16f))).boldened();
+            const auto tickArea = juce::Rectangle<float> (20.0f, 12.0f).withCentre ({ tx, ty });
+            g.setFont (tickFont);
+            g.setColour (juce::Colours::black.withAlpha (0.5f));
+            g.drawText (juce::String (i + 1), tickArea.translated (0.0f, 1.0f), juce::Justification::centred);
             g.setColour (scaleNumberColour);
-            g.setFont (juce::Font (juce::FontOptions (juce::jmax (8.0f, outerRadius * 0.16f))).boldened());
-            g.drawText (juce::String (i + 1),
-                        juce::Rectangle<float> (20.0f, 12.0f).withCentre ({ tx, ty }),
-                        juce::Justification::centred);
+            g.drawText (juce::String (i + 1), tickArea, juce::Justification::centred);
         }
 
         // Drop shadow, grounding the real knob photo onto the panel.

@@ -71,7 +71,8 @@ juce_add_binary_data(AURAAssets SOURCES
     Resources/UI/jewel_green.png
     Resources/UI/handle.png
     Resources/UI/grille.png
-    Resources/UI/cream_panel.png)
+    Resources/UI/steel_panel.png
+    Resources/UI/tolex_panel.png)
 
 target_compile_definitions(AURA PUBLIC
     JUCE_WEB_BROWSER=0

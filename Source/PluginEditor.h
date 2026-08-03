@@ -8,15 +8,17 @@
 
 namespace aura
 {
-    // Full hand-drawn "vintage tube amp" GUI: a black tolex-style cabinet
-    // (leather handle, chrome corners) around a cream control panel, with a
-    // branded header (script-ish logo, jewel power light, analogue VU
-    // needle, instrument selector) over module panels that mirror the real
-    // signal chain (Gate -> Comp -> Amp -> Cab -> EQ -> Limiter), each drawn
-    // with numbered-scale knobs and a jewel bypass LED. Everything is
-    // procedural juce::Graphics drawing - no image assets. The colour
-    // palette evokes vintage American tube amps in general, not any one
-    // manufacturer's specific trade dress or logo.
+    // Full "vintage tube amp" GUI, mixing procedural juce::Graphics drawing
+    // with real processed photographic materials (tolex, worn steel panel,
+    // leather handle, grille cloth, chicken-head knobs, jewel lights): a
+    // black tolex-covered cabinet (leather handle, chrome corners) around an
+    // aged/worn steel control panel, with a branded header (wordmark, jewel
+    // power light, analogue VU needle, instrument selector) over module
+    // panels that mirror the real signal chain (Gate -> Comp -> Amp -> Cab
+    // -> EQ -> Limiter), each drawn with numbered-scale knobs and a jewel
+    // bypass LED. The colour palette and worn-metal look evoke vintage
+    // American tube amps in general, not any one manufacturer's specific
+    // trade dress or logo.
     class AuraAudioProcessorEditor : public juce::AudioProcessorEditor
     {
     public:

@@ -7,8 +7,9 @@ namespace aura
     {
         const juce::Colour creamTop     (0xfffdfbf7);
         const juce::Colour creamBottom  (0xffe6dbc4);
-        const juce::Colour tanBorder    (0xff8a7a60);
+        const juce::Colour tanBorder    (0xff9c8a5c);
         const juce::Colour inkBrown     (0xff443322);
+        const juce::Colour engravedText (0xffe9dfc4);
         const juce::Colour chromeLight  (0xfff0f0f0);
         const juce::Colour chromeDark   (0xff666666);
 
@@ -53,7 +54,7 @@ namespace aura
         knob->caption.setText (captionText, juce::dontSendNotification);
         knob->caption.setJustificationType (juce::Justification::centred);
         knob->caption.setFont (juce::Font (juce::FontOptions (11.0f)).boldened());
-        knob->caption.setColour (juce::Label::textColourId, inkBrown);
+        knob->caption.setColour (juce::Label::textColourId, engravedText);
 
         addAndMakeVisible (knob->slider);
         addAndMakeVisible (knob->caption);
@@ -105,7 +106,7 @@ namespace aura
         statusLabel.setVisible (true);
         statusLabel.setJustificationType (juce::Justification::centredLeft);
         statusLabel.setFont (juce::Font (juce::FontOptions (10.0f)));
-        statusLabel.setColour (juce::Label::textColourId, inkBrown.withAlpha (0.75f));
+        statusLabel.setColour (juce::Label::textColourId, engravedText.withAlpha (0.8f));
         statusLabel.setMinimumHorizontalScale (0.7f);
         addAndMakeVisible (statusLabel);
 
@@ -121,14 +122,14 @@ namespace aura
     {
         auto bounds = getLocalBounds().toFloat();
 
-        const auto& creamTexture = UIAssets::getCreamPanel();
-        if (creamTexture.isValid())
+        const auto& steelTexture = UIAssets::getSteelPanel();
+        if (steelTexture.isValid())
         {
             // Tile origin uses this panel's position within the editor (not
-            // local 0,0), so the texture lines up with the big cream
+            // local 0,0), so the texture lines up with the big steel
             // backplate drawn behind every module instead of restarting at
             // each panel's own corner.
-            g.setFillType (juce::FillType (creamTexture, juce::AffineTransform::translation (
+            g.setFillType (juce::FillType (steelTexture, juce::AffineTransform::translation (
                 (float) -getX(), (float) -getY())));
             g.fillRoundedRectangle (bounds, 6.0f);
             g.setFillType (juce::FillType (juce::Colours::black));
@@ -140,7 +141,7 @@ namespace aura
             g.fillRoundedRectangle (bounds, 6.0f);
         }
 
-        g.setColour (tanBorder.withAlpha (0.6f));
+        g.setColour (tanBorder.withAlpha (0.5f));
         g.drawRoundedRectangle (bounds.reduced (1.0f), 6.0f, 1.5f);
 
         for (auto corner : { juce::Point<float> (14.0f, 14.0f),
@@ -149,9 +150,14 @@ namespace aura
                               juce::Point<float> (bounds.getWidth() - 14.0f, bounds.getHeight() - 14.0f) })
             drawScrew (g, corner);
 
+        // Engraved-metal look: pale parchment text with a soft dark drop
+        // shadow, legible against the worn steel instead of the old plain
+        // ink-on-cream silkscreen look.
         auto titleArea = juce::Rectangle<int> (24, 4, getWidth() - 44, 18);
         g.setFont (juce::Font (juce::FontOptions (12.5f)).withExtraKerningFactor (0.1f).boldened());
-        g.setColour (inkBrown);
+        g.setColour (juce::Colours::black.withAlpha (0.55f));
+        g.drawText (title, titleArea.translated (0, 1), juce::Justification::centredLeft);
+        g.setColour (engravedText);
         g.drawText (title, titleArea, juce::Justification::centredLeft);
     }
 

@@ -30,5 +30,6 @@ namespace aura::UIAssets
     const juce::Image& getJewelGreen();
     const juce::Image& getHandle();
     const juce::Image& getGrille();
-    const juce::Image& getCreamPanel();
+    const juce::Image& getSteelPanel();
+    const juce::Image& getTolexPanel();
 }

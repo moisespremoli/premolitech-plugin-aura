@@ -14,8 +14,8 @@ namespace aura
 
         const juce::Colour creamTop     (0xfffdfbf7);
         const juce::Colour creamBottom  (0xffe6dbc4);
-        const juce::Colour inkBrown     (0xff443322);
-        const juce::Colour tanBorder    (0xff8a7a60);
+        const juce::Colour tanBorder    (0xff9c8a5c);
+        const juce::Colour engravedText (0xffece3ca);
         const juce::Colour chromeLight  (0xfff0f0f0);
         const juce::Colour chromeDark   (0xff666666);
 
@@ -148,22 +148,31 @@ namespace aura
         backgroundImage = juce::Image (juce::Image::ARGB, getWidth(), getHeight(), true);
         juce::Graphics g (backgroundImage);
 
-        // Black tolex-covered cabinet body.
-        juce::ColourGradient tolexGradient (juce::Colour (0xff2a2a2a), getWidth() * 0.5f, getHeight() * 0.5f,
-                                             juce::Colour (0xff0d0d0d), 0.0f, 0.0f, true);
-        g.setGradientFill (tolexGradient);
-        g.fillAll();
-
-        // Fine weave texture, fixed seed so it's stable across repaints
-        // instead of shimmering.
-        juce::Random rng (54321);
-        for (int y = 0; y < getHeight(); y += 2)
+        // Real photographed black pebbled tolex/leatherette, tiled to cover
+        // the whole cabinet body (replaces the old procedural gradient +
+        // synthetic weave noise).
         {
-            if (rng.nextFloat() < 0.5f)
+            const auto& tolexTexture = UIAssets::getTolexPanel();
+            if (tolexTexture.isValid())
             {
-                g.setColour (juce::Colours::white.withAlpha (rng.nextFloat() * 0.015f));
-                g.drawHorizontalLine (y, 0.0f, (float) getWidth());
+                g.setFillType (juce::FillType (tolexTexture, juce::AffineTransform()));
+                g.fillAll();
+                g.setFillType (juce::FillType (juce::Colours::black));
             }
+            else
+            {
+                juce::ColourGradient tolexGradient (juce::Colour (0xff2a2a2a), getWidth() * 0.5f, getHeight() * 0.5f,
+                                                     juce::Colour (0xff0d0d0d), 0.0f, 0.0f, true);
+                g.setGradientFill (tolexGradient);
+                g.fillAll();
+            }
+
+            // Subtle vignette so the tiled texture reads as one large panel
+            // rather than an obviously repeating swatch.
+            juce::ColourGradient vignette (juce::Colours::transparentBlack, getWidth() * 0.5f, getHeight() * 0.5f,
+                                            juce::Colours::black.withAlpha (0.35f), 0.0f, 0.0f, true);
+            g.setGradientFill (vignette);
+            g.fillAll();
         }
 
         // Stitched seam just inside the outer edge.
@@ -237,16 +246,16 @@ namespace aura
 
         auto panel = getPanelBounds();
 
-        // Cream backplate behind every module panel - the modules' own
-        // gaps show this through, so the panel reads as one continuous
-        // ivory control plate rather than separate floating tiles. Tile
+        // Worn steel backplate behind every module panel - the modules' own
+        // gaps show this through, so the panel reads as one continuous aged
+        // metal control plate rather than separate floating tiles. Tile
         // origin is the editor's own (0,0) - ModulePanel uses the matching
-        // -getX()/-getY() offset so its own cream fill lines up exactly
+        // -getX()/-getY() offset so its own steel fill lines up exactly
         // with this one instead of restarting at each panel's corner.
-        const auto& creamTexture = UIAssets::getCreamPanel();
-        if (creamTexture.isValid())
+        const auto& steelTexture = UIAssets::getSteelPanel();
+        if (steelTexture.isValid())
         {
-            g.setFillType (juce::FillType (creamTexture, juce::AffineTransform()));
+            g.setFillType (juce::FillType (steelTexture, juce::AffineTransform()));
             g.fillRoundedRectangle (panel.toFloat(), 10.0f);
             g.setFillType (juce::FillType (juce::Colours::black));
         }
@@ -257,16 +266,25 @@ namespace aura
             g.setGradientFill (panelGradient);
             g.fillRoundedRectangle (panel.toFloat(), 10.0f);
         }
-        g.setColour (tanBorder);
+        g.setColour (tanBorder.withAlpha (0.7f));
         g.drawRoundedRectangle (panel.toFloat().reduced (1.0f), 10.0f, 1.5f);
 
-        // Header: brand wordmark, jewel power light.
-        g.setColour (inkBrown);
+        // Header: brand wordmark, jewel power light. Engraved-metal look -
+        // pale parchment ink with a soft dark shadow so it reads clearly
+        // against the worn steel instead of the old dark-ink-on-cream look.
+        auto drawEngraved = [&] (const juce::String& text, juce::Rectangle<int> area, juce::Justification j)
+        {
+            g.setColour (juce::Colours::black.withAlpha (0.55f));
+            g.drawText (text, area.translated (0, 1), j);
+            g.setColour (engravedText);
+            g.drawText (text, area, j);
+        };
+
         g.setFont (juce::Font (juce::FontOptions (15.0f)).boldened().withExtraKerningFactor (0.18f));
-        g.drawText ("PREMOLI LABS", panel.getX() + 24, panel.getY() + 16, 260, 20, juce::Justification::centredLeft);
+        drawEngraved ("PREMOLI LABS", { panel.getX() + 24, panel.getY() + 16, 260, 20 }, juce::Justification::centredLeft);
 
         g.setFont (juce::Font (juce::FontOptions (36.0f)).italicised().boldened());
-        g.drawText ("AURA", panel.getX() + 22, panel.getY() + 34, 220, 44, juce::Justification::centredLeft);
+        drawEngraved ("AURA", { panel.getX() + 22, panel.getY() + 34, 220, 44 }, juce::Justification::centredLeft);
 
         {
             juce::Rectangle<float> jewel (30.0f, 30.0f);
@@ -283,12 +301,11 @@ namespace aura
             }
         }
 
-        g.setColour (inkBrown.withAlpha (0.85f));
         g.setFont (juce::Font (juce::FontOptions (10.0f)).boldened().withExtraKerningFactor (0.05f));
-        g.drawText ("INSTRUMENT", instrumentBox.getBounds().translated (0, -16).withHeight (14),
-                     juce::Justification::centred);
-        g.drawText ("OUTPUT LEVEL", outputMeter.getBounds().translated (0, -16).withHeight (14),
-                     juce::Justification::centred);
+        drawEngraved ("INSTRUMENT", instrumentBox.getBounds().translated (0, -16).withHeight (14),
+                      juce::Justification::centred);
+        drawEngraved ("OUTPUT LEVEL", outputMeter.getBounds().translated (0, -16).withHeight (14),
+                      juce::Justification::centred);
     }
 
     void AuraAudioProcessorEditor::resized()
