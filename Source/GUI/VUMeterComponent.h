@@ -6,11 +6,11 @@
 
 namespace aura
 {
-    // A real-time analogue-style VU meter of our own design (chrome frame,
-    // aged parchment face with a classic -20..+3 dB scale, red "hot" zone,
-    // printed markings, swinging needle) - polls a level provider on a
-    // Timer, so the needle position genuinely reflects the plugin's live
-    // output level rather than a decorative animation.
+    // A simple, easy-to-read LED ladder meter: a row of segments that light
+    // up green -> yellow -> red with the plugin's live output level, like a
+    // classic hardware peak meter. Deliberately simpler than an analogue
+    // needle gauge - no scale to read, just how many segments are lit.
+    // Polls a level provider on a Timer so it reflects real audio.
     class VUMeterComponent : public juce::Component, private juce::Timer
     {
     public:
@@ -22,14 +22,6 @@ namespace aura
         void timerCallback() override;
 
         std::function<float()> levelProvider;
-        float displayLevel = 0.0f;
-        float needleAngle = 0.0f;
-
-        // A handful of fixed, pre-randomised grime/foxing blotches on the
-        // face, in (0-1, 0-1, radius-fraction, alpha) unit-space so they
-        // scale with the component - generated once so they stay put
-        // across the 30Hz repaint instead of shimmering.
-        struct Blotch { float x, y, r, alpha; };
-        std::vector<Blotch> blotches;
+        float displayLevel = 0.0f; // smoothed 0-1 fraction of the segment ladder lit
     };
 }

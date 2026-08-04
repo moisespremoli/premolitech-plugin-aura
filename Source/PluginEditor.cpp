@@ -160,8 +160,8 @@ namespace aura
 
         // Placed in the open gap between the power jewel and the
         // instrument selector on the nameplate strip - the reference photo
-        // doesn't draw a VU meter itself, so there's no exact spot to match.
-        outputMeter.setBounds (juce::Rectangle<int> (90, 54).withCentre (scaledPoint (380.0f, 35.0f)));
+        // doesn't draw a meter itself, so there's no exact spot to match.
+        outputMeter.setBounds (juce::Rectangle<int> (170, 30).withCentre (scaledPoint (380.0f, 35.0f)));
         instrumentBox.setBounds (juce::Rectangle<int> (200, 30).withCentre (scaledPoint (620.0f, 37.0f)));
 
         inputPanel.setBounds (scaledRect (0, 60, 140, 225));
@@ -170,37 +170,37 @@ namespace aura
         gatePanel.setBounds (scaledRect (140, 60, 355, 225));
         gatePanel.layoutKnobsExplicit ({ scaledPoint (173, 145), scaledPoint (243, 145), scaledPoint (313, 145) },
                                         standardKnobDiameter);
-        gatePanel.layoutBypassExplicit (scaledPoint (343, 82), jewelDiameter);
+        gatePanel.layoutBypassExplicit (scaledPoint (341, 78), jewelDiameter);
 
         compPanel.setBounds (scaledRect (355, 60, 704, 225));
         compPanel.layoutKnobsExplicit ({ scaledPoint (393, 145), scaledPoint (456, 145), scaledPoint (518, 145),
                                           scaledPoint (582, 145), scaledPoint (645, 145) },
                                         standardKnobDiameter);
-        compPanel.layoutBypassExplicit (scaledPoint (693, 82), jewelDiameter);
+        compPanel.layoutBypassExplicit (scaledPoint (672, 78), jewelDiameter);
 
         ampPanel.setBounds (scaledRect (0, 225, 704, 375));
         ampPanel.layoutKnobsExplicit ({ scaledPoint (78, 305), scaledPoint (187, 305), scaledPoint (296, 305),
                                          scaledPoint (405, 305), scaledPoint (514, 305), scaledPoint (623, 305) },
                                        standardKnobDiameter);
-        // Kept in the gap between the amp-model combo box and the knob row
-        // (the combo box renders taller than its nominal bounds, so a
-        // jewel placed just above it still ends up hidden underneath).
-        ampPanel.layoutBypassExplicit (scaledPoint (685, 258), jewelDiameter);
-        ampPanel.layoutComboExplicit (scaledRect (15, 228, 695, 248));
+        // The photo's own bypass hole for AMPLIFIER sits inside the combo
+        // box's row (y 228-248) - the combo box is moved down below it
+        // instead of the jewel being moved away from its real hole.
+        ampPanel.layoutBypassExplicit (scaledPoint (668, 230), jewelDiameter);
+        ampPanel.layoutComboExplicit (scaledRect (15, 251, 695, 271));
 
         cabPanel.setBounds (scaledRect (0, 375, 180, 540));
         cabPanel.layoutKnobsExplicit ({ scaledPoint (100, 450) }, standardKnobDiameter);
-        cabPanel.layoutBypassExplicit (scaledPoint (167, 392), jewelDiameter);
+        cabPanel.layoutBypassExplicit (scaledPoint (172, 379), jewelDiameter);
         cabPanel.layoutToolbarExplicit (scaledRect (15, 392, 100, 408), scaledRect (104, 392, 175, 408));
 
         eqPanel.setBounds (scaledRect (180, 375, 400, 540));
         eqPanel.layoutKnobsExplicit ({ scaledPoint (224, 450), scaledPoint (294, 450), scaledPoint (362, 450) },
                                       standardKnobDiameter);
-        eqPanel.layoutBypassExplicit (scaledPoint (388, 392), jewelDiameter);
+        eqPanel.layoutBypassExplicit (scaledPoint (393, 379), jewelDiameter);
 
         limiterPanel.setBounds (scaledRect (400, 375, 565, 540));
         limiterPanel.layoutKnobsExplicit ({ scaledPoint (486, 450) }, bigKnobDiameter);
-        limiterPanel.layoutBypassExplicit (scaledPoint (555, 392), jewelDiameter);
+        limiterPanel.layoutBypassExplicit (scaledPoint (561, 379), jewelDiameter);
 
         outputPanel.setBounds (scaledRect (565, 375, 704, 540));
         outputPanel.layoutKnobsExplicit ({ scaledPoint (627, 450) }, standardKnobDiameter);
