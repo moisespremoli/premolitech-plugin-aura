@@ -178,15 +178,18 @@ namespace aura
                                         standardKnobDiameter);
         compPanel.layoutBypassExplicit (scaledPoint (672, 78), jewelDiameter);
 
-        ampPanel.setBounds (scaledRect (0, 225, 704, 375));
+        // Extends a few px above the AMPLIFIER row's usual top (225) so the
+        // bypass jewel - placed just below the "AMPLIFIER" title, at its
+        // real hole - has room without needing negative local coordinates.
+        ampPanel.setBounds (scaledRect (0, 220, 704, 375));
         ampPanel.layoutKnobsExplicit ({ scaledPoint (78, 305), scaledPoint (187, 305), scaledPoint (296, 305),
                                          scaledPoint (405, 305), scaledPoint (514, 305), scaledPoint (623, 305) },
                                        standardKnobDiameter);
-        // The photo's own bypass hole for AMPLIFIER sits inside the combo
-        // box's row (y 228-248) - the combo box is moved down below it
-        // instead of the jewel being moved away from its real hole.
-        ampPanel.layoutBypassExplicit (scaledPoint (668, 230), jewelDiameter);
-        ampPanel.layoutComboExplicit (scaledRect (15, 251, 695, 271));
+        ampPanel.layoutBypassExplicit (scaledPoint (668, 222), jewelDiameter);
+        // Sized to fully cover the photo's own "SISO" model-name text
+        // (a garbled AI-art typo) without touching the "AMPLIFIER" title
+        // above it.
+        ampPanel.layoutComboExplicit (scaledRect (15, 233, 695, 256));
 
         cabPanel.setBounds (scaledRect (0, 375, 180, 540));
         cabPanel.layoutKnobsExplicit ({ scaledPoint (100, 450) }, standardKnobDiameter);
