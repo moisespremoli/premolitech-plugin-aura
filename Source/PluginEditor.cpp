@@ -194,7 +194,9 @@ namespace aura
         cabPanel.setBounds (scaledRect (0, 375, 180, 540));
         cabPanel.layoutKnobsExplicit ({ scaledPoint (100, 450) }, standardKnobDiameter);
         cabPanel.layoutBypassExplicit (scaledPoint (172, 379), jewelDiameter);
-        cabPanel.layoutToolbarExplicit (scaledRect (15, 392, 100, 408), scaledRect (104, 392, 175, 408));
+        // Sized to fit inside the darker-gold slot already drawn in the
+        // photo, instead of spilling out over its edges.
+        cabPanel.layoutToolbarExplicit (scaledRect (20, 387, 90, 402), scaledRect (94, 388, 178, 401));
 
         eqPanel.setBounds (scaledRect (180, 375, 400, 540));
         eqPanel.layoutKnobsExplicit ({ scaledPoint (224, 450), scaledPoint (294, 450), scaledPoint (362, 450) },
