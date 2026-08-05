@@ -91,14 +91,18 @@ namespace aura
         statusLabel.setText (text, juce::dontSendNotification);
     }
 
-    void ModulePanel::layoutKnobsExplicit (const std::vector<juce::Point<int>>& centresInParentSpace, int diameter)
+    void ModulePanel::layoutKnobsExplicit (const std::vector<juce::Point<int>>& centresInParentSpace, int diameter,
+                                            bool showCaptionsBelow)
     {
         explicitLayout = true;
         for (size_t i = 0; i < knobs.size() && i < centresInParentSpace.size(); ++i)
         {
             const auto centreLocal = centresInParentSpace[i] - getPosition();
             knobs[i]->slider.setBounds (juce::Rectangle<int> (diameter, diameter).withCentre (centreLocal));
-            knobs[i]->caption.setVisible (false);
+            knobs[i]->caption.setVisible (showCaptionsBelow);
+            if (showCaptionsBelow)
+                knobs[i]->caption.setBounds (juce::Rectangle<int> (diameter + 20, 16)
+                                                  .withCentre (centreLocal + juce::Point<int> (0, diameter / 2 + 12)));
         }
     }
 

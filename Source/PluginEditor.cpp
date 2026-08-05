@@ -35,9 +35,9 @@ namespace aura
         // that's right for one section and overlapping or lost in the
         // gap everywhere else.
         constexpr int smallKnobDiameter  = 54;  // GATE, COMPRESSOR
-        constexpr int mediumKnobDiameter = 66;  // CABINET, EQ, OUTPUT
-        constexpr int largeKnobDiameter  = 88;  // INPUT, AMPLIFIER
-        constexpr int bigKnobDiameter    = 120; // LIMITER
+        constexpr int mediumKnobDiameter = 66;  // EQ
+        constexpr int largeKnobDiameter  = 88;  // INPUT, AMPLIFIER, CABINET, OUTPUT
+        constexpr int bigKnobDiameter    = 96;  // LIMITER - was 120, still overlapped the printed 4/9
         constexpr int jewelDiameter      = 20;
     }
 
@@ -204,10 +204,13 @@ namespace aura
         // No knob art at all is printed inside this box (it's the one
         // section left blank in the reference photo), so the toggle,
         // LOAD IR button and MIX knob are placed by eye instead of traced.
+        // The MIX knob also gets its caption drawn (showCaptionsBelow) -
+        // every other knob relies on a label already printed in the photo,
+        // but this box has none.
         cabPanel.setBounds (scaledRect (0, 770, 365, 1122));
-        cabPanel.layoutKnobsExplicit ({ scaledPoint (182, 950) }, mediumKnobDiameter);
+        cabPanel.layoutKnobsExplicit ({ scaledPoint (182, 970) }, largeKnobDiameter, true);
         cabPanel.layoutBypassExplicit (scaledPoint (350, 792), jewelDiameter);
-        cabPanel.layoutToolbarExplicit (scaledRect (20, 845, 110, 870), scaledRect (115, 845, 345, 868));
+        cabPanel.layoutToolbarExplicit (scaledRect (30, 860, 120, 885), scaledRect (125, 860, 345, 883));
 
         eqPanel.setBounds (scaledRect (365, 770, 800, 1122));
         eqPanel.layoutKnobsExplicit ({ scaledPoint (460, 905), scaledPoint (595, 905), scaledPoint (720, 905) },
@@ -222,6 +225,6 @@ namespace aura
         limiterPanel.layoutBypassExplicit (scaledPoint (1095, 795), jewelDiameter);
 
         outputPanel.setBounds (scaledRect (1060, 770, 1360, 1122));
-        outputPanel.layoutKnobsExplicit ({ scaledPoint (1250, 905) }, mediumKnobDiameter);
+        outputPanel.layoutKnobsExplicit ({ scaledPoint (1250, 905) }, largeKnobDiameter);
     }
 }

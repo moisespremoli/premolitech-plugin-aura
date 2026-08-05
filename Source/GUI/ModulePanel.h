@@ -48,7 +48,12 @@ namespace aura
         // (as usual, via setBounds()) large enough to contain every knob's
         // circle, since JUCE clips a component's children to its own
         // bounds.
-        void layoutKnobsExplicit (const std::vector<juce::Point<int>>& centresInParentSpace, int diameter);
+        // showCaptionBelow draws this panel's own caption label under a
+        // knob instead of hiding it - for the rare knob (e.g. CABINET's
+        // MIX) that has no printed label of its own in the background to
+        // rely on.
+        void layoutKnobsExplicit (const std::vector<juce::Point<int>>& centresInParentSpace, int diameter,
+                                   bool showCaptionsBelow = false);
 
         // As layoutKnobsExplicit(), for the single bypass LED.
         void layoutBypassExplicit (juce::Point<int> centreInParentSpace, int diameter);
