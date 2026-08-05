@@ -11,10 +11,20 @@
 #define MyAppName "Premoli Labs AURA"
 #define MyShortName "AURA"
 #define MyPublisher "Premoli Labs"
+#ifndef MyAppVersion
+  #define MyAppVersion "0.0.0"
+#endif
 
 [Setup]
+; AppId fixo (não muda entre versões) - é isto que permite ao Inno
+; Setup reconhecer uma instalação antiga da mesma app ao correr um
+; instalador mais recente (atualiza no lugar em vez de duplicar a
+; entrada em "Programas e Funcionalidades") e o mesmo desinstalador
+; remove sempre tudo da versão que estiver instalada.
+AppId={{5C284E13-C773-4A06-9772-B8023659F113}
 AppName={#MyAppName}
-AppVersion=1.0
+AppVersion={#MyAppVersion}
+VersionInfoVersion={#MyAppVersion}
 AppPublisher={#MyPublisher}
 DefaultDirName={autopf}\{#MyPublisher}\{#MyShortName}
 DisableProgramGroupPage=yes
@@ -42,4 +52,5 @@ Source: "..\dist\{#MyAppName}.exe"; DestDir: "{autopf}\{#MyPublisher}\{#MyShortN
 
 [Icons]
 Name: "{autoprograms}\{#MyPublisher}\{#MyAppName}"; Filename: "{autopf}\{#MyPublisher}\{#MyShortName}\{#MyAppName}.exe"
+Name: "{autoprograms}\{#MyPublisher}\Desinstalar {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{autopf}\{#MyPublisher}\{#MyShortName}\{#MyAppName}.exe"; Tasks: desktopicon

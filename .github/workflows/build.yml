@@ -62,6 +62,23 @@ jobs:
           Copy-Item -Recurse "build/AURA_artefacts/Release/Standalone/*" dist/
           Compress-Archive -Path dist/* -DestinationPath "${{ matrix.artifact }}.zip"
 
+      # A versão real (da tag ou do input manual) é passada ao Inno Setup
+      # via /DMyAppVersion, para o AppId+versão dinâmica no .iss saber
+      # identificar upgrades/downgrades corretamente em vez de ficar
+      # sempre em "0.0.0".
+      - name: Determine version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ github.event.inputs.version }}" -ne "") {
+            $ver = "${{ github.event.inputs.version }}"
+          } elseif ("${{ github.ref_type }}" -eq "tag") {
+            $ver = "${{ github.ref_name }}" -replace '^v',''
+          } else {
+            $ver = "0.0.0"
+          }
+          echo "PLUGIN_VERSION=$ver" >> $env:GITHUB_ENV
+
       # Instalador .exe (Inno Setup, já vem instalado nos runners
       # windows-latest): copia o VST3 para a pasta comum do VST3 e a
       # Standalone para Program Files - sem o utilizador ter de saber
@@ -70,7 +87,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\windows-installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$env:PLUGIN_VERSION" installer\windows-installer.iss
           Move-Item "installer\PremoliLabs-AURA-Installer.exe" "${{ matrix.artifact }}-Installer.exe"
 
       - name: Collect artifacts (Linux)
