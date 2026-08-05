@@ -7,11 +7,12 @@ namespace aura
 {
     namespace
     {
-        // The reference photo (Resources/UI/panel_photo.png) is a crop of a
-        // user-supplied mock-up, 704x560 source pixels, scaled up to fill
-        // this editor's window exactly (no distortion, since the window is
-        // sized to the same aspect ratio in the constructor below).
-        constexpr float photoScale = 1040.0f / 704.0f;
+        // The reference photo (Resources/UI/panel_photo.png) is a
+        // user-supplied mock-up, 1402x1122 source pixels, scaled down to
+        // fill this editor's window exactly (no distortion, since the
+        // window is sized to the same aspect ratio in the constructor
+        // below).
+        constexpr float photoScale = 1040.0f / 1402.0f;
 
         juce::Point<int> scaledPoint (float sourceX, float sourceY)
         {
@@ -100,9 +101,9 @@ namespace aura
             panel->setExplicitLayoutMode (true);
 
         setResizable (false, false);
-        // Window aspect matches the reference photo's crop (704x560)
-        // exactly, so it fills the window with zero distortion.
-        setSize (1040, 827);
+        // Window aspect matches the reference photo (1402x1122) exactly,
+        // so it fills the window with zero distortion.
+        setSize (1040, 832);
     }
 
     AuraAudioProcessorEditor::~AuraAudioProcessorEditor()
@@ -141,7 +142,7 @@ namespace aura
         const auto& jewelImage = UIAssets::getJewelRed();
         if (jewelImage.isValid())
         {
-            auto jewel = juce::Rectangle<float> (22.0f, 22.0f).withCentre (scaledPoint (170.0f, 37.0f).toFloat());
+            auto jewel = juce::Rectangle<float> (22.0f, 22.0f).withCentre (scaledPoint (340.0f, 80.0f).toFloat());
             const auto scale = jewel.getWidth() / (float) jewelImage.getWidth();
             g.setFillType (juce::FillType (jewelImage, juce::AffineTransform::scale (scale)
                                                             .translated (jewel.getX(), jewel.getY())));
@@ -153,62 +154,59 @@ namespace aura
     void AuraAudioProcessorEditor::resized()
     {
         // Every position below is measured directly off Resources/UI/
-        // panel_photo.png (in its own 704x560 source pixels, via
+        // panel_photo.png (in its own 1402x1122 source pixels, via
         // scaledPoint()/scaledRect()) so each real control lands exactly on
-        // top of the matching knob hole / label / cutout already drawn in
-        // that photo.
+        // top of the matching knob hole / label already drawn in that
+        // photo. The CABINET box and every bypass jewel have no printed
+        // art of their own in this photo (unlike the knobs), so those are
+        // placed by eye in the open space instead of traced from a hole.
 
         // Placed in the open gap between the power jewel and the
-        // instrument selector on the nameplate strip - the reference photo
-        // doesn't draw a meter itself, so there's no exact spot to match.
-        outputMeter.setBounds (juce::Rectangle<int> (170, 30).withCentre (scaledPoint (380.0f, 35.0f)));
-        instrumentBox.setBounds (juce::Rectangle<int> (200, 30).withCentre (scaledPoint (620.0f, 37.0f)));
+        // "PREMOLI LABS" title on the nameplate strip.
+        outputMeter.setBounds (juce::Rectangle<int> (170, 26).withCentre (scaledPoint (460.0f, 80.0f)));
+        // Sits inside the empty pill outline already printed top-right.
+        instrumentBox.setBounds (juce::Rectangle<int> (165, 28).withCentre (scaledPoint (1278.0f, 81.0f)));
 
-        inputPanel.setBounds (scaledRect (0, 60, 140, 225));
-        inputPanel.layoutKnobsExplicit ({ scaledPoint (75, 145) }, standardKnobDiameter);
+        inputPanel.setBounds (scaledRect (0, 145, 270, 460));
+        inputPanel.layoutKnobsExplicit ({ scaledPoint (160, 305) }, standardKnobDiameter);
 
-        gatePanel.setBounds (scaledRect (140, 60, 355, 225));
-        gatePanel.layoutKnobsExplicit ({ scaledPoint (173, 145), scaledPoint (243, 145), scaledPoint (313, 145) },
+        gatePanel.setBounds (scaledRect (270, 145, 715, 460));
+        gatePanel.layoutKnobsExplicit ({ scaledPoint (352, 305), scaledPoint (495, 305), scaledPoint (625, 305) },
                                         standardKnobDiameter);
-        gatePanel.layoutBypassExplicit (scaledPoint (341, 78), jewelDiameter);
+        gatePanel.layoutBypassExplicit (scaledPoint (695, 176), jewelDiameter);
 
-        compPanel.setBounds (scaledRect (355, 60, 704, 225));
-        compPanel.layoutKnobsExplicit ({ scaledPoint (393, 145), scaledPoint (456, 145), scaledPoint (518, 145),
-                                          scaledPoint (582, 145), scaledPoint (645, 145) },
+        compPanel.setBounds (scaledRect (715, 145, 1360, 460));
+        compPanel.layoutKnobsExplicit ({ scaledPoint (795, 305), scaledPoint (915, 305), scaledPoint (1030, 305),
+                                          scaledPoint (1170, 305), scaledPoint (1290, 305) },
                                         standardKnobDiameter);
-        compPanel.layoutBypassExplicit (scaledPoint (672, 78), jewelDiameter);
+        compPanel.layoutBypassExplicit (scaledPoint (1340, 176), jewelDiameter);
 
-        // Extends a few px above the AMPLIFIER row's usual top (225) so the
-        // bypass jewel - placed just below the "AMPLIFIER" title, at its
-        // real hole - has room without needing negative local coordinates.
-        ampPanel.setBounds (scaledRect (0, 220, 704, 375));
-        ampPanel.layoutKnobsExplicit ({ scaledPoint (78, 305), scaledPoint (187, 305), scaledPoint (296, 305),
-                                         scaledPoint (405, 305), scaledPoint (514, 305), scaledPoint (623, 305) },
+        ampPanel.setBounds (scaledRect (0, 460, 1360, 770));
+        ampPanel.layoutKnobsExplicit ({ scaledPoint (160, 630), scaledPoint (385, 630), scaledPoint (610, 630),
+                                         scaledPoint (825, 630), scaledPoint (1035, 630), scaledPoint (1255, 630) },
                                        standardKnobDiameter);
-        ampPanel.layoutBypassExplicit (scaledPoint (668, 222), jewelDiameter);
-        // Sized to fully cover the photo's own "SISO" model-name text
-        // (a garbled AI-art typo) without touching the "AMPLIFIER" title
-        // above it.
-        ampPanel.layoutComboExplicit (scaledRect (15, 233, 695, 256));
+        ampPanel.layoutBypassExplicit (scaledPoint (1340, 480), jewelDiameter);
+        // Thin strip right under the "AMPLIFIER" title, above the knob row.
+        ampPanel.layoutComboExplicit (scaledRect (20, 485, 1340, 515));
 
-        cabPanel.setBounds (scaledRect (0, 375, 180, 540));
-        cabPanel.layoutKnobsExplicit ({ scaledPoint (100, 450) }, standardKnobDiameter);
-        cabPanel.layoutBypassExplicit (scaledPoint (172, 379), jewelDiameter);
-        // Sized to fit inside the darker-gold slot already drawn in the
-        // photo, instead of spilling out over its edges - matches the
-        // outline the user traced directly on that slot.
-        cabPanel.layoutToolbarExplicit (scaledRect (26, 388, 78, 401), scaledRect (82, 388, 178, 401));
+        // No knob art at all is printed inside this box (it's the one
+        // section left blank in the reference photo), so the toggle,
+        // LOAD IR button and MIX knob are placed by eye instead of traced.
+        cabPanel.setBounds (scaledRect (0, 770, 365, 1122));
+        cabPanel.layoutKnobsExplicit ({ scaledPoint (182, 950) }, standardKnobDiameter);
+        cabPanel.layoutBypassExplicit (scaledPoint (325, 812), jewelDiameter);
+        cabPanel.layoutToolbarExplicit (scaledRect (20, 845, 110, 870), scaledRect (115, 845, 345, 868));
 
-        eqPanel.setBounds (scaledRect (180, 375, 400, 540));
-        eqPanel.layoutKnobsExplicit ({ scaledPoint (224, 450), scaledPoint (294, 450), scaledPoint (362, 450) },
+        eqPanel.setBounds (scaledRect (365, 770, 800, 1122));
+        eqPanel.layoutKnobsExplicit ({ scaledPoint (460, 905), scaledPoint (595, 905), scaledPoint (720, 905) },
                                       standardKnobDiameter);
-        eqPanel.layoutBypassExplicit (scaledPoint (393, 379), jewelDiameter);
+        eqPanel.layoutBypassExplicit (scaledPoint (785, 800), jewelDiameter);
 
-        limiterPanel.setBounds (scaledRect (400, 375, 565, 540));
-        limiterPanel.layoutKnobsExplicit ({ scaledPoint (486, 450) }, bigKnobDiameter);
-        limiterPanel.layoutBypassExplicit (scaledPoint (561, 379), jewelDiameter);
+        limiterPanel.setBounds (scaledRect (800, 770, 1060, 1122));
+        limiterPanel.layoutKnobsExplicit ({ scaledPoint (975, 905) }, bigKnobDiameter);
+        limiterPanel.layoutBypassExplicit (scaledPoint (1045, 800), jewelDiameter);
 
-        outputPanel.setBounds (scaledRect (565, 375, 704, 540));
-        outputPanel.layoutKnobsExplicit ({ scaledPoint (627, 450) }, standardKnobDiameter);
+        outputPanel.setBounds (scaledRect (1060, 770, 1360, 1122));
+        outputPanel.layoutKnobsExplicit ({ scaledPoint (1250, 905) }, standardKnobDiameter);
     }
 }
