@@ -157,9 +157,10 @@ namespace aura
         // panel_photo.png (in its own 1402x1122 source pixels, via
         // scaledPoint()/scaledRect()) so each real control lands exactly on
         // top of the matching knob hole / label already drawn in that
-        // photo. The CABINET box and every bypass jewel have no printed
-        // art of their own in this photo (unlike the knobs), so those are
-        // placed by eye in the open space instead of traced from a hole.
+        // photo. Every bypass jewel sits on the small screw already
+        // printed at that panel's own boundary (one screw per section,
+        // marking its right-hand divider) - the CABINET box has no knob
+        // art of its own though, so its toolbar/MIX knob are placed by eye.
 
         // Placed in the open gap between the power jewel and the
         // "PREMOLI LABS" title on the nameplate strip.
@@ -173,19 +174,19 @@ namespace aura
         gatePanel.setBounds (scaledRect (270, 145, 715, 460));
         gatePanel.layoutKnobsExplicit ({ scaledPoint (352, 305), scaledPoint (495, 305), scaledPoint (625, 305) },
                                         standardKnobDiameter);
-        gatePanel.layoutBypassExplicit (scaledPoint (695, 176), jewelDiameter);
+        gatePanel.layoutBypassExplicit (scaledPoint (692, 172), jewelDiameter);
 
         compPanel.setBounds (scaledRect (715, 145, 1360, 460));
         compPanel.layoutKnobsExplicit ({ scaledPoint (795, 305), scaledPoint (915, 305), scaledPoint (1030, 305),
                                           scaledPoint (1170, 305), scaledPoint (1290, 305) },
                                         standardKnobDiameter);
-        compPanel.layoutBypassExplicit (scaledPoint (1340, 176), jewelDiameter);
+        compPanel.layoutBypassExplicit (scaledPoint (1350, 170), jewelDiameter);
 
         ampPanel.setBounds (scaledRect (0, 460, 1360, 770));
         ampPanel.layoutKnobsExplicit ({ scaledPoint (160, 630), scaledPoint (385, 630), scaledPoint (610, 630),
                                          scaledPoint (825, 630), scaledPoint (1035, 630), scaledPoint (1255, 630) },
                                        standardKnobDiameter);
-        ampPanel.layoutBypassExplicit (scaledPoint (1340, 480), jewelDiameter);
+        ampPanel.layoutBypassExplicit (scaledPoint (1350, 485), jewelDiameter);
         // Thin strip right under the "AMPLIFIER" title, above the knob row.
         ampPanel.layoutComboExplicit (scaledRect (20, 485, 1340, 515));
 
@@ -194,17 +195,20 @@ namespace aura
         // LOAD IR button and MIX knob are placed by eye instead of traced.
         cabPanel.setBounds (scaledRect (0, 770, 365, 1122));
         cabPanel.layoutKnobsExplicit ({ scaledPoint (182, 950) }, standardKnobDiameter);
-        cabPanel.layoutBypassExplicit (scaledPoint (325, 812), jewelDiameter);
+        cabPanel.layoutBypassExplicit (scaledPoint (350, 792), jewelDiameter);
         cabPanel.layoutToolbarExplicit (scaledRect (20, 845, 110, 870), scaledRect (115, 845, 345, 868));
 
         eqPanel.setBounds (scaledRect (365, 770, 800, 1122));
         eqPanel.layoutKnobsExplicit ({ scaledPoint (460, 905), scaledPoint (595, 905), scaledPoint (720, 905) },
                                       standardKnobDiameter);
-        eqPanel.layoutBypassExplicit (scaledPoint (785, 800), jewelDiameter);
+        eqPanel.layoutBypassExplicit (scaledPoint (783, 790), jewelDiameter);
 
-        limiterPanel.setBounds (scaledRect (800, 770, 1060, 1122));
+        // Widened past the usual 1060 boundary so its bypass jewel - on
+        // the screw printed just before "OUTPUT", at x=1095 - has room
+        // without falling outside this panel's own clip region.
+        limiterPanel.setBounds (scaledRect (800, 770, 1110, 1122));
         limiterPanel.layoutKnobsExplicit ({ scaledPoint (975, 905) }, bigKnobDiameter);
-        limiterPanel.layoutBypassExplicit (scaledPoint (1045, 800), jewelDiameter);
+        limiterPanel.layoutBypassExplicit (scaledPoint (1095, 795), jewelDiameter);
 
         outputPanel.setBounds (scaledRect (1060, 770, 1360, 1122));
         outputPanel.layoutKnobsExplicit ({ scaledPoint (1250, 905) }, standardKnobDiameter);
