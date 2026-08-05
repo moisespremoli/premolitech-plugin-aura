@@ -25,7 +25,10 @@ namespace aura
                      juce::roundToInt ((x1 - x0) * photoScale), juce::roundToInt ((y1 - y0) * photoScale) };
         }
 
-        constexpr int standardKnobDiameter = 78;
+        // Sized to stay inside the gap between the printed 3/7 (and 1/9)
+        // digits around each knob hole in the new flat background - at 78
+        // the drawn dial's rim overlapped those numbers.
+        constexpr int standardKnobDiameter = 54;
         constexpr int bigKnobDiameter      = 120;
         constexpr int jewelDiameter        = 20;
     }
