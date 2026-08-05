@@ -25,12 +25,20 @@ namespace aura
                      juce::roundToInt ((x1 - x0) * photoScale), juce::roundToInt ((y1 - y0) * photoScale) };
         }
 
-        // Sized to stay inside the gap between the printed 3/7 (and 1/9)
-        // digits around each knob hole in the new flat background - at 78
-        // the drawn dial's rim overlapped those numbers.
-        constexpr int standardKnobDiameter = 54;
-        constexpr int bigKnobDiameter      = 120;
-        constexpr int jewelDiameter        = 20;
+        // The printed scale in the new flat background isn't the same
+        // radius everywhere - INPUT/AMPLIFIER have a single wide row so
+        // their scale is drawn big, GATE/COMPRESSOR cram several knobs
+        // into the same width so theirs is drawn tight, and EQ/OUTPUT/
+        // CABINET sit in between. Each constant below was measured
+        // against its own section's printed digits so the drawn dial's
+        // rim clears them with a bit of margin, instead of one size
+        // that's right for one section and overlapping or lost in the
+        // gap everywhere else.
+        constexpr int smallKnobDiameter  = 54;  // GATE, COMPRESSOR
+        constexpr int mediumKnobDiameter = 66;  // CABINET, EQ, OUTPUT
+        constexpr int largeKnobDiameter  = 88;  // INPUT, AMPLIFIER
+        constexpr int bigKnobDiameter    = 120; // LIMITER
+        constexpr int jewelDiameter      = 20;
     }
 
     AuraAudioProcessorEditor::AuraAudioProcessorEditor (AuraAudioProcessor& processorToEdit)
@@ -172,23 +180,23 @@ namespace aura
         instrumentBox.setBounds (juce::Rectangle<int> (165, 28).withCentre (scaledPoint (1278.0f, 81.0f)));
 
         inputPanel.setBounds (scaledRect (0, 145, 270, 460));
-        inputPanel.layoutKnobsExplicit ({ scaledPoint (160, 305) }, standardKnobDiameter);
+        inputPanel.layoutKnobsExplicit ({ scaledPoint (160, 305) }, largeKnobDiameter);
 
         gatePanel.setBounds (scaledRect (270, 145, 715, 460));
         gatePanel.layoutKnobsExplicit ({ scaledPoint (352, 305), scaledPoint (495, 305), scaledPoint (625, 305) },
-                                        standardKnobDiameter);
+                                        smallKnobDiameter);
         gatePanel.layoutBypassExplicit (scaledPoint (692, 172), jewelDiameter);
 
         compPanel.setBounds (scaledRect (715, 145, 1360, 460));
         compPanel.layoutKnobsExplicit ({ scaledPoint (795, 305), scaledPoint (915, 305), scaledPoint (1030, 305),
                                           scaledPoint (1170, 305), scaledPoint (1290, 305) },
-                                        standardKnobDiameter);
+                                        smallKnobDiameter);
         compPanel.layoutBypassExplicit (scaledPoint (1350, 170), jewelDiameter);
 
         ampPanel.setBounds (scaledRect (0, 460, 1360, 770));
         ampPanel.layoutKnobsExplicit ({ scaledPoint (160, 630), scaledPoint (385, 630), scaledPoint (610, 630),
                                          scaledPoint (825, 630), scaledPoint (1035, 630), scaledPoint (1255, 630) },
-                                       standardKnobDiameter);
+                                       largeKnobDiameter);
         ampPanel.layoutBypassExplicit (scaledPoint (1350, 485), jewelDiameter);
         // Thin strip right under the "AMPLIFIER" title, above the knob row.
         ampPanel.layoutComboExplicit (scaledRect (20, 485, 1340, 515));
@@ -197,13 +205,13 @@ namespace aura
         // section left blank in the reference photo), so the toggle,
         // LOAD IR button and MIX knob are placed by eye instead of traced.
         cabPanel.setBounds (scaledRect (0, 770, 365, 1122));
-        cabPanel.layoutKnobsExplicit ({ scaledPoint (182, 950) }, standardKnobDiameter);
+        cabPanel.layoutKnobsExplicit ({ scaledPoint (182, 950) }, mediumKnobDiameter);
         cabPanel.layoutBypassExplicit (scaledPoint (350, 792), jewelDiameter);
         cabPanel.layoutToolbarExplicit (scaledRect (20, 845, 110, 870), scaledRect (115, 845, 345, 868));
 
         eqPanel.setBounds (scaledRect (365, 770, 800, 1122));
         eqPanel.layoutKnobsExplicit ({ scaledPoint (460, 905), scaledPoint (595, 905), scaledPoint (720, 905) },
-                                      standardKnobDiameter);
+                                      mediumKnobDiameter);
         eqPanel.layoutBypassExplicit (scaledPoint (783, 790), jewelDiameter);
 
         // Widened past the usual 1060 boundary so its bypass jewel - on
@@ -214,6 +222,6 @@ namespace aura
         limiterPanel.layoutBypassExplicit (scaledPoint (1095, 795), jewelDiameter);
 
         outputPanel.setBounds (scaledRect (1060, 770, 1360, 1122));
-        outputPanel.layoutKnobsExplicit ({ scaledPoint (1250, 905) }, standardKnobDiameter);
+        outputPanel.layoutKnobsExplicit ({ scaledPoint (1250, 905) }, mediumKnobDiameter);
     }
 }
